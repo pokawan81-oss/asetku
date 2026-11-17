@@ -1,0 +1,12 @@
+# Artefak uji lokal
+test-*.html
+
+# Hasil ekspor aplikasi
+data-aset-*.csv
+data-aset-*.xlsx
+cadangan-aset-*.json
+
+# Berkas sistem
+Thumbs.db
+.DS_Store
+desktop.ini
