@@ -4,6 +4,8 @@ Website pencatatan aset sederhana yang dibuat **hanya dengan HTML, CSS, dan Java
 
 Data aset disimpan otomatis di **localStorage** browser, sehingga tetap ada walaupun halaman ditutup atau browser di-restart.
 
+**Versi online:** https://pokawan81-oss.github.io/asetku/ — setiap pengunjung memakai data lokal browsernya masing-masing.
+
 ## Fitur
 
 - **Login pengelola** — buat akun saat pertama membuka aplikasi, masuk dengan username & kata sandi, "Ingat saya", ganti kata sandi, dan keluar. Kata sandi disimpan sebagai hash (PBKDF2-SHA256), bukan teks biasa.
@@ -57,6 +59,8 @@ Aset WEB/
 ├─ assets/
 │  ├─ css/style.css      # Seluruh tampilan (tema terang/gelap, responsif)
 │  └─ js/app.js          # Logika aplikasi + penyimpanan localStorage
+├─ .nojekyll             # Agar GitHub Pages menyajikan folder assets apa adanya
+├─ .gitignore            # Mengabaikan artefak uji & hasil ekspor
 └─ README.md
 ```
 
