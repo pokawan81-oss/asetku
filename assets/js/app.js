@@ -1846,6 +1846,11 @@
 
     /* Form */
     const form = $('#assetForm');
+    const submitForm = () => {
+      if (typeof form.requestSubmit === 'function') form.requestSubmit();
+      else form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    };
+
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       const data = readForm();
@@ -1891,6 +1896,8 @@
         toast('Aset baru berhasil ditambahkan.', 'success');
       }
     });
+
+    $('#btnSubmitTop').addEventListener('click', submitForm);
 
     $('#btnGenKode').addEventListener('click', () => {
       const input = $('#fKode');
@@ -2085,8 +2092,7 @@
       const topModal = $$('.modal:not([hidden])').pop();
       if (topModal && topModal.id === 'formModal' && (e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
-        if (typeof form.requestSubmit === 'function') form.requestSubmit();
-        else form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        submitForm();
         return;
       }
 

@@ -11,7 +11,7 @@ Data aset disimpan otomatis di **localStorage** browser, sehingga tetap ada wala
 - **Login pengelola** — buat akun saat pertama membuka aplikasi, masuk dengan username & kata sandi, "Ingat saya", ganti kata sandi, dan keluar. Kata sandi disimpan sebagai hash (PBKDF2-SHA256), bukan teks biasa.
 - **Tambah aset sendiri** — kode otomatis (AST-001, AST-002, …), nama, kategori, jumlah, satuan, kondisi, lokasi, tanggal perolehan, harga, dan keterangan.
 - **Edit & hapus** data aset dengan konfirmasi.
-- **Form aman** — meminta konfirmasi sebelum ditutup jika ada perubahan belum disimpan, memvalidasi tanggal (tidak boleh masa depan) dan kode duplikat, serta menyimpan dengan `Ctrl + Enter`.
+- **Form aman** — meminta konfirmasi sebelum ditutup jika ada perubahan belum disimpan, memvalidasi tanggal (tidak boleh masa depan) dan kode duplikat, serta menyimpan dengan `Ctrl + Enter`. Tombol simpan tersedia di footer yang selalu terlihat dan di kanan atas form.
 - **Detail aset** dalam modal, termasuk nilai total.
 - **Pencarian** berdasarkan nama, kode, kategori, lokasi, atau keterangan.
 - **Filter** kategori & kondisi, serta **pengurutan** (terbaru, nama, nilai, tanggal).
@@ -46,7 +46,7 @@ python -m http.server 8000
 3. Isi minimal **Nama aset** dan **Kategori**; jumlah minimal 1.
 4. **Nilai total** dihitung otomatis dari jumlah × harga satuan.
 5. Tanggal perolehan tidak boleh melebihi hari ini. Kode aset harus unik.
-6. Klik **Simpan Aset** / **Simpan Perubahan**, atau tekan `Ctrl + Enter`.
+6. Klik **Simpan Aset** / **Simpan Perubahan** (tombol di footer yang selalu terlihat), tombol centang **Simpan** di kanan atas form, atau tekan `Ctrl + Enter`.
 7. Jika form ditutup lewat backdrop, `Esc`, atau **Batal** saat ada perubahan, aplikasi meminta konfirmasi agar isian tidak hilang.
 
 Jika penyimpanan browser gagal (mis. ruang penuh), form tetap terbuka dan data tidak dianggap tersimpan.

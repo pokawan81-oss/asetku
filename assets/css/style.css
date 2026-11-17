@@ -359,6 +359,19 @@ svg {
   border-color: transparent;
 }
 
+.icon-btn.save {
+  background: var(--primary);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 8px 16px -12px var(--primary);
+}
+
+.icon-btn.save:hover {
+  background: var(--primary-hover);
+  color: #fff;
+  border-color: transparent;
+}
+
 .theme-btn .icon-sun {
   display: none;
 }
@@ -1233,12 +1246,28 @@ tbody tr:last-child td {
   width: min(440px, 100%);
 }
 
+/* Form di dalam modal harus jadi kolom flex agar header/body/footer terpisah rapi */
+.modal-dialog > form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .modal-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
   padding: 20px 22px 12px;
+  flex: 0 0 auto;
+}
+
+.modal-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .modal-header h2 {
@@ -1256,6 +1285,9 @@ tbody tr:last-child td {
 .modal-body {
   padding: 6px 22px 22px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .modal-footer {
@@ -1267,6 +1299,8 @@ tbody tr:last-child td {
   padding: 14px 22px;
   border-top: 1px solid var(--border);
   background: var(--surface);
+  flex: 0 0 auto;
+  box-shadow: 0 -12px 24px -24px rgba(8, 15, 30, 0.45);
 }
 
 .footer-spacer {
@@ -1660,6 +1694,7 @@ tbody tr:last-child td {
 
   .modal-footer {
     padding: 12px 16px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   }
 
   .toasts {
