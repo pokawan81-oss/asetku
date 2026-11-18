@@ -1303,6 +1303,9 @@
       ? '<mergeCells count="' + opts.merges.length + '">' + opts.merges.map((ref) => '<mergeCell ref="' + ref + '"/>').join('') + '</mergeCells>'
       : '';
     const filter = opts.autoFilter ? '<autoFilter ref="' + opts.autoFilter + '"/>' : '';
+    const tableParts = (opts.tableParts && opts.tableParts.length)
+      ? '<tableParts count="' + opts.tableParts.length + '">' + opts.tableParts.map((rid) => '<tablePart r:id="' + rid + '"/>').join('') + '</tableParts>'
+      : '';
     let view = '';
     if (opts.freeze) {
       view = '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>' +
@@ -1324,7 +1327,24 @@
       merges +
       '<pageMargins left="0.5" right="0.5" top="0.6" bottom="0.6" header="0.3" footer="0.3"/>' +
       '<pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/>' +
+      tableParts +
       '</worksheet>';
+  }
+
+  /* Tabel Excel (ListObject): memberi tombol filter native di setiap kolom */
+  function tableXml(table) {
+    const cols = table.columns.map((name, i) => (
+      '<tableColumn id="' + (i + 1) + '" name="' + xmlEscape(name) + '"/>'
+    )).join('');
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<table xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"' +
+        ' id="' + table.id + '" name="' + table.name + '" displayName="' + table.name + '"' +
+        ' ref="' + table.ref + '" totalsRowShown="0">' +
+      '<autoFilter ref="' + table.ref + '"/>' +
+      '<tableColumns count="' + table.columns.length + '">' + cols + '</tableColumns>' +
+      '<tableStyleInfo name="TableStyleMedium2" showFirstColumn="0" showLastColumn="0"' +
+        ' showRowStripes="0" showColumnStripes="0"/>' +
+      '</table>';
   }
 
   function buildDataSheet(items) {
@@ -1363,6 +1383,12 @@
 
     const lastDataRow = items.length + 1;
     const totalRow = lastDataRow + 1;
+    const table = {
+      id: 1,
+      name: 'DataAset',
+      ref: 'A1:' + lastCol + lastDataRow,
+      columns: headers
+    };
 
     rows.push(xlsxRow(totalRow, [
       xlsxCell('A' + totalRow, 'TOTAL', STYLE.totalLabel),
@@ -1378,15 +1404,18 @@
       xlsxCell('K' + totalRow, '', STYLE.totalLabel)
     ], 22));
 
-    return sheetXml(rows.join(''), {
-      tab: true,
-      grid: true,
-      dimension: 'A1:' + lastCol + totalRow,
-      cols: colsXml(widths),
-      autoFilter: 'A1:' + lastCol + lastDataRow,
-      freeze: true,
-      merges: ['A' + totalRow + ':C' + totalRow]
-    });
+    return {
+      xml: sheetXml(rows.join(''), {
+        tab: true,
+        grid: true,
+        dimension: 'A1:' + lastCol + totalRow,
+        cols: colsXml(widths),
+        tableParts: ['rId1'],
+        freeze: true,
+        merges: ['A' + totalRow + ':C' + totalRow]
+      }),
+      table
+    };
   }
 
   function buildSummarySheet(items) {
@@ -1500,6 +1529,13 @@
     });
 
     const lastDataRow = r - 1;
+    const table = data.length ? {
+      id: 2,
+      name: 'RekapKategori',
+      ref: 'A4:E' + lastDataRow,
+      columns: ['Kategori', 'Jumlah Jenis', 'Total Unit', 'Nilai Total', 'Porsi Nilai']
+    } : null;
+
     rows.push(xlsxRow(r, [
       xlsxCell('A' + r, 'TOTAL', STYLE.totalLabel),
       xlsxCell('B' + r, totalJenis, STYLE.totalInteger),
@@ -1508,12 +1544,15 @@
       xlsxCell('E' + r, totalNilai ? 1 : 0, STYLE.totalPercent)
     ], 22));
 
-    return sheetXml(rows.join(''), {
-      dimension: 'A1:E' + r,
-      cols: colsXml([30, 16, 14, 20, 14]),
-      autoFilter: data.length ? 'A4:E' + lastDataRow : '',
-      merges: ['A1:E1', 'A2:E2']
-    });
+    return {
+      xml: sheetXml(rows.join(''), {
+        dimension: 'A1:E' + r,
+        cols: colsXml([30, 16, 14, 20, 14]),
+        tableParts: table ? ['rId1'] : [],
+        merges: ['A1:E1', 'A2:E2']
+      }),
+      table
+    };
   }
 
   function stylesXml() {
@@ -1568,14 +1607,18 @@
   function workbookFiles(items) {
     const now = new Date().toISOString();
     const sheets = [
-      { name: 'Data Aset', xml: buildDataSheet(items) },
-      { name: 'Ringkasan', xml: buildSummarySheet(items) },
-      { name: 'Rekap Kategori', xml: buildKategoriSheet(items) }
+      Object.assign({ name: 'Data Aset' }, buildDataSheet(items)),
+      { name: 'Ringkasan', xml: buildSummarySheet(items), table: null },
+      Object.assign({ name: 'Rekap Kategori' }, buildKategoriSheet(items))
     ];
+    const tables = sheets.filter((sheet) => sheet.table).map((sheet) => sheet.table);
 
     const overrides = sheets.map((sheet, index) => (
       '<Override PartName="/xl/worksheets/sheet' + (index + 1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
-    )).join('');
+    )).join('') +
+      tables.map((table) => (
+        '<Override PartName="/xl/tables/table' + table.id + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml"/>'
+      )).join('');
 
     const contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
@@ -1656,6 +1699,19 @@
 
     sheets.forEach((sheet, index) => {
       files.push({ name: 'xl/worksheets/sheet' + (index + 1) + '.xml', text: sheet.xml });
+      if (sheet.table) {
+        files.push({
+          name: 'xl/worksheets/_rels/sheet' + (index + 1) + '.xml.rels',
+          text: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/table" Target="../tables/table' + sheet.table.id + '.xml"/>' +
+            '</Relationships>'
+        });
+      }
+    });
+
+    tables.forEach((table) => {
+      files.push({ name: 'xl/tables/table' + table.id + '.xml', text: tableXml(table) });
     });
 
     return files.map((file) => ({ name: file.name, data: encoder.encode(file.text) }));

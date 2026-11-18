@@ -18,7 +18,7 @@ Data aset disimpan otomatis di **localStorage** browser, sehingga tetap ada wala
 - **Ringkasan statistik**: total unit, total nilai aset, jumlah kategori, dan unit yang perlu perhatian.
 - **Paginasi** otomatis.
 - **Penyimpanan otomatis** di browser (localStorage) + status "Tersimpan".
-- **Ekspor Excel (.xlsx)** asli dengan 3 sheet: Data Aset, Ringkasan, dan Rekap Kategori — lengkap dengan format rupiah, tanggal, serta baris total.
+- **Ekspor Excel (.xlsx)** asli dengan 3 sheet: Data Aset, Ringkasan, dan Rekap Kategori — lengkap dengan format rupiah, tanggal, baris total, dan **tombol filter di setiap kolom**.
 - **Ekspor CSV** dan **cadangan/impor JSON**.
 - **Mode terang & gelap** (tersimpan otomatis).
 - **Muat contoh data** untuk mencoba aplikasi dengan cepat.
@@ -96,7 +96,7 @@ Buka menu **Data → Ekspor Excel (.xlsx)**. File `.xlsx` dibuat langsung di bro
 
 | Sheet | Isi |
 | --- | --- |
-| **Data Aset** | Semua aset dengan header berwarna, baris beku (freeze), filter otomatis, format rupiah, tanggal `dd/mm/yyyy`, dan baris TOTAL. |
+| **Data Aset** | Semua aset dengan header berwarna, baris beku (freeze), **tombol filter di setiap kolom**, format rupiah, tanggal `dd/mm/yyyy`, dan baris TOTAL. |
 | **Ringkasan** | Statistik umum (jumlah jenis, total unit, total nilai, rata-rata nilai, aset termahal) dan sebaran kondisi. |
 | **Rekap Kategori** | Jumlah jenis, total unit, nilai total, dan porsi nilai per kategori, diurutkan dari nilai terbesar. |
 
@@ -105,6 +105,17 @@ Buka menu **Data → Ekspor Excel (.xlsx)**. File `.xlsx` dibuat langsung di bro
 - Kolom angka disimpan sebagai angka asli (bisa dihitung ulang di Excel), bukan teks.
 - Nama file: `data-aset-YYYY-MM-DD.xlsx`.
 - **Ekspor CSV** tetap tersedia untuk kebutuhan impor ke aplikasi lain.
+
+### Memfilter di Excel
+
+Sheet **Data Aset** dan **Rekap Kategori** diekspor sebagai **Tabel Excel** (`DataAset`, `RekapKategori`), sehingga tombol panah filter langsung tersedia di setiap header kolom:
+
+1. Buka file `.xlsx` di Excel, lalu klik **Enable Editing** jika muncul Protected View.
+2. Klik panah filter pada header kolom (mis. **Kategori** atau **Kondisi**).
+3. Pilih nilai yang ingin ditampilkan, atau gunakan **Text Filters / Number Filters**.
+4. Klik **Clear Filter** untuk menampilkan semua baris lagi.
+
+Baris **TOTAL** sengaja diletakkan **di luar tabel** agar angkanya tidak ikut tersaring saat filter dipakai.
 
 ## Kustomisasi Cepat
 
