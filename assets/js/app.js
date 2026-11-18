@@ -8,9 +8,14 @@
   /* ---------------- Konstanta ---------------- */
   const DATA_KEY = 'asetku.data.v1';
   const THEME_KEY = 'asetku.theme';
+  const UI_KEY = 'asetku.ui.v1';
   const USERS_KEY = 'asetku.users.v1';
   const SESSION_KEY = 'asetku.session.v1';
   const PAGE_SIZE = 8;
+
+  const REPORT_WEEKS = 8;
+  const REPORT_MONTHS = 6;
+  const WARNA_GRAFIK = ['#2563eb', '#22c55e', '#f59e0b', '#a855f7', '#ef4444', '#14b8a6', '#64748b'];
 
   const PBKDF2_ITERATIONS = 150000;
   const SESSION_TTL = 30 * 24 * 60 * 60 * 1000; /* 30 hari untuk "Ingat saya" */
@@ -21,6 +26,13 @@
   const KATEGORI_UMUM = ['Elektronik', 'Furnitur', 'Kendaraan', 'Inventaris IT', 'Peralatan Kantor', 'Bangunan', 'Lainnya'];
   const SATUAN_UMUM = ['Unit', 'Buah', 'Set', 'Lembar', 'Dus', 'Paket', 'Orang'];
 
+  /* Tanggal relatif untuk contoh data agar dashboard langsung terisi */
+  const tanggalLalu = (hari) => {
+    const d = new Date();
+    d.setDate(d.getDate() - hari);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  };
+
   const CONTOH = [
     { kode: '', nama: 'Laptop Lenovo ThinkPad E14', kategori: 'Inventaris IT', jumlah: 6, satuan: 'Unit', kondisi: 'Baik', lokasi: 'Ruang IT Lt. 2', tanggal: '2024-02-12', harga: 12500000, keterangan: 'Digunakan tim operasional dan developer.' },
     { kode: '', nama: 'Printer Epson L3250', kategori: 'Elektronik', jumlah: 2, satuan: 'Unit', kondisi: 'Rusak Ringan', lokasi: 'Ruang Administrasi', tanggal: '2023-08-05', harga: 2850000, keterangan: 'Unit kedua sering macet saat mencetak.' },
@@ -29,7 +41,11 @@
     { kode: '', nama: 'Proyektor BenQ MX560', kategori: 'Elektronik', jumlah: 1, satuan: 'Unit', kondisi: 'Baik', lokasi: 'Ruang Rapat Utama', tanggal: '2024-06-18', harga: 6200000, keterangan: 'Termasuk kabel HDMI 10 meter.' },
     { kode: '', nama: 'Toyota Avanza (B 1234 XYZ)', kategori: 'Kendaraan', jumlah: 1, satuan: 'Unit', kondisi: 'Baik', lokasi: 'Parkir Basement', tanggal: '2021-03-10', harga: 215000000, keterangan: 'Pajak berlaku sampai Maret 2027.' },
     { kode: '', nama: 'AC Split 1.5 PK', kategori: 'Peralatan Kantor', jumlah: 8, satuan: 'Unit', kondisi: 'Rusak Berat', lokasi: 'Lantai 2 - Ruang Meeting', tanggal: '2020-09-01', harga: 4200000, keterangan: 'Satu unit tidak dingin dan perlu diganti.' },
-    { kode: '', nama: 'Server NAS Synology DS920+', kategori: 'Inventaris IT', jumlah: 1, satuan: 'Unit', kondisi: 'Baik', lokasi: 'Ruang Server', tanggal: '2023-12-04', harga: 18900000, keterangan: 'Penyimpanan backup internal 32 TB.' }
+    { kode: '', nama: 'Server NAS Synology DS920+', kategori: 'Inventaris IT', jumlah: 1, satuan: 'Unit', kondisi: 'Baik', lokasi: 'Ruang Server', tanggal: '2023-12-04', harga: 18900000, keterangan: 'Penyimpanan backup internal 32 TB.' },
+    { kode: '', nama: 'Laptop Staf Baru', kategori: 'Inventaris IT', jumlah: 2, satuan: 'Unit', kondisi: 'Baik', lokasi: 'Ruang IT Lt. 2', tanggal: tanggalLalu(0), harga: 9500000, keterangan: 'Pengadaan minggu ini.' },
+    { kode: '', nama: 'Kursi Kerja Baru', kategori: 'Furnitur', jumlah: 6, satuan: 'Buah', kondisi: 'Baik', lokasi: 'Lantai 1 - Area Staff', tanggal: tanggalLalu(6), harga: 1250000, keterangan: '' },
+    { kode: '', nama: 'Printer Kasir', kategori: 'Elektronik', jumlah: 1, satuan: 'Unit', kondisi: 'Rusak Ringan', lokasi: 'Ruang Administrasi', tanggal: tanggalLalu(24), harga: 2150000, keterangan: '' },
+    { kode: '', nama: 'Lemari Arsip', kategori: 'Peralatan Kantor', jumlah: 3, satuan: 'Buah', kondisi: 'Baik', lokasi: 'Gudang Lt. 1', tanggal: tanggalLalu(40), harga: 2000000, keterangan: '' }
   ];
 
   const SVG = {
@@ -77,6 +93,64 @@
     return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
   };
 
+  /* ---------------- Utilitas periode laporan ---------------- */
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const isoOf = (d) => d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+
+  const parseIsoDate = (value) => {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ''));
+    if (!match) return null;
+    const d = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    if (d.getFullYear() !== Number(match[1]) || d.getMonth() !== Number(match[2]) - 1 || d.getDate() !== Number(match[3])) return null;
+    return d;
+  };
+
+  const startOfWeek = (date) => {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const back = (d.getDay() + 6) % 7; /* Senin = awal minggu */
+    d.setDate(d.getDate() - back);
+    return d;
+  };
+
+  const addDays = (date, days) => {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    d.setDate(d.getDate() + days);
+    return d;
+  };
+
+  const addMonths = (date, months) => new Date(date.getFullYear(), date.getMonth() + months, 1);
+
+  const isoWeekNumber = (date) => {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const day = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - day);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  };
+
+  const bulanPanjang = new Intl.DateTimeFormat('id-ID', { month: 'long' });
+  const bulanPendek = new Intl.DateTimeFormat('id-ID', { month: 'short' });
+  const angkaRingkas = new Intl.NumberFormat('id-ID', { notation: 'compact', maximumFractionDigits: 1 });
+
+  const formatWeekRange = (start) => {
+    const end = addDays(start, 6);
+    if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()) {
+      return start.getDate() + '–' + end.getDate() + ' ' + bulanPendek.format(start) + ' ' + start.getFullYear();
+    }
+    if (start.getFullYear() === end.getFullYear()) {
+      return start.getDate() + ' ' + bulanPendek.format(start) + ' – ' + end.getDate() + ' ' + bulanPendek.format(end) + ' ' + end.getFullYear();
+    }
+    return start.getDate() + ' ' + bulanPendek.format(start) + ' ' + start.getFullYear() + ' – ' +
+      end.getDate() + ' ' + bulanPendek.format(end) + ' ' + end.getFullYear();
+  };
+
+  const formatMonthRange = (start, end) => start.getDate() + '–' + end.getDate() + ' ' +
+    bulanPendek.format(start) + ' ' + start.getFullYear();
+
+  const formatMonthLabel = (date) => bulanPanjang.format(date) + ' ' + date.getFullYear();
+
+  const reportMetricLabel = () => (state.report.metric === 'nilai' ? 'nilai' : 'unit');
+
   function formatTanggal(iso) {
     if (!iso) return '—';
     const parts = String(iso).split('-').map(Number);
@@ -104,7 +178,13 @@
     editId: null,
     detailId: null,
     pendingConfirm: null,
-    formSnapshot: ''
+    formSnapshot: '',
+    report: {
+      source: 'tanggal',
+      mode: 'mingguan',
+      metric: 'unit',
+      offset: 0
+    }
   };
 
   let currentUser = null;
@@ -571,6 +651,429 @@
     $('#statRusak').textContent = angka.format(rusak);
   }
 
+  /* ---------------- Dashboard & laporan ---------------- */
+  function loadUiPrefs() {
+    try {
+      const raw = localStorage.getItem(UI_KEY);
+      if (!raw) return;
+      const prefs = JSON.parse(raw);
+      const report = prefs && prefs.report;
+      if (!report) return;
+      if (report.source === 'tanggal' || report.source === 'createdAt') state.report.source = report.source;
+      if (report.mode === 'mingguan' || report.mode === 'bulanan') state.report.mode = report.mode;
+      if (report.metric === 'unit' || report.metric === 'nilai') state.report.metric = report.metric;
+    } catch (err) { /* abaikan preferensi rusak */ }
+  }
+
+  function saveUiPrefs() {
+    try {
+      localStorage.setItem(UI_KEY, JSON.stringify({
+        report: {
+          source: state.report.source,
+          mode: state.report.mode,
+          metric: state.report.metric
+        }
+      }));
+    } catch (err) { /* abaikan */ }
+  }
+
+  function reportDateOf(item, source) {
+    if (source === 'createdAt') {
+      const d = new Date(item.createdAt);
+      if (Number.isNaN(d.getTime())) return null;
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+    return parseIsoDate(item.tanggal);
+  }
+
+  function periodFor(date, mode) {
+    if (mode === 'bulanan') {
+      const start = new Date(date.getFullYear(), date.getMonth(), 1);
+      return {
+        key: start.getFullYear() + '-' + pad2(start.getMonth() + 1),
+        start,
+        end: new Date(start.getFullYear(), start.getMonth() + 1, 0)
+      };
+    }
+    const start = startOfWeek(date);
+    return { key: isoOf(start), start, end: addDays(start, 6) };
+  }
+
+  function shiftPeriodDate(date, mode, delta) {
+    return mode === 'bulanan' ? addMonths(date, delta) : addDays(startOfWeek(date), delta * 7);
+  }
+
+  function collectReport(items, source, mode, offset) {
+    const windowSize = mode === 'bulanan' ? REPORT_MONTHS : REPORT_WEEKS;
+    const focusDate = shiftPeriodDate(new Date(), mode, -offset);
+    const periods = [];
+
+    for (let i = windowSize - 1; i >= 0; i -= 1) {
+      const period = periodFor(shiftPeriodDate(focusDate, mode, -i), mode);
+      period.jenis = 0;
+      period.unit = 0;
+      period.nilai = 0;
+      periods.push(period);
+    }
+
+    const buckets = new Map(periods.map((period) => [period.key, period]));
+    const tanpaTanggal = { jenis: 0, unit: 0, nilai: 0 };
+    const windowItems = [];
+
+    items.forEach((item) => {
+      const unit = Number(item.jumlah) || 0;
+      const nilai = nilaiAset(item);
+      const date = reportDateOf(item, source);
+
+      if (!date) {
+        tanpaTanggal.jenis += 1;
+        tanpaTanggal.unit += unit;
+        tanpaTanggal.nilai += nilai;
+        return;
+      }
+
+      const bucket = buckets.get(periodFor(date, mode).key);
+      if (!bucket) return;
+
+      bucket.jenis += 1;
+      bucket.unit += unit;
+      bucket.nilai += nilai;
+      windowItems.push(item);
+    });
+
+    const focus = periods[periods.length - 1];
+    const prev = buckets.get(periodFor(shiftPeriodDate(focus.start, mode, -1), mode).key) ||
+      { jenis: 0, unit: 0, nilai: 0 };
+
+    const metricKey = state.report.metric === 'nilai' ? 'nilai' : 'unit';
+
+    const kategoriMap = new Map();
+    const lokasiMap = new Map();
+    const kondisi = { 'Baik': 0, 'Rusak Ringan': 0, 'Rusak Berat': 0 };
+
+    windowItems.forEach((item) => {
+      const unit = Number(item.jumlah) || 0;
+      const nilai = nilaiAset(item);
+
+      const kategori = item.kategori || 'Lainnya';
+      const kategoriEntry = kategoriMap.get(kategori) || { label: kategori, unit: 0, nilai: 0 };
+      kategoriEntry.unit += unit;
+      kategoriEntry.nilai += nilai;
+      kategoriMap.set(kategori, kategoriEntry);
+
+      const lokasi = String(item.lokasi || '').trim() || 'Tanpa lokasi';
+      const lokasiEntry = lokasiMap.get(lokasi) || { label: lokasi, unit: 0, nilai: 0 };
+      lokasiEntry.unit += unit;
+      lokasiEntry.nilai += nilai;
+      lokasiMap.set(lokasi, lokasiEntry);
+
+      const kondisiKey = kondisi[item.kondisi] == null ? 'Baik' : item.kondisi;
+      kondisi[kondisiKey] += unit;
+    });
+
+    const urutMetric = (a, b) => (
+      b[metricKey] - a[metricKey] || a.label.localeCompare(b.label, 'id', { sensitivity: 'base' })
+    );
+
+    return {
+      periods,
+      focus,
+      prev,
+      windowSize,
+      kategori: Array.from(kategoriMap.values()).sort(urutMetric),
+      lokasi: Array.from(lokasiMap.values()).sort(urutMetric).slice(0, 5),
+      kondisi,
+      tanpaTanggal
+    };
+  }
+
+  const chartEmpty = (text) => '<div class="chart-empty">' + esc(text) + '</div>';
+  const metricValue = (entry) => (state.report.metric === 'nilai' ? entry.nilai : entry.unit);
+  const compactNumber = (value) => angkaRingkas.format(Number(value) || 0);
+  const compactRupiah = (value) => 'Rp ' + angkaRingkas.format(Number(value) || 0);
+
+  function periodShort(period, mode) {
+    if (mode === 'bulanan') {
+      return bulanPendek.format(period.start) + ' ' + String(period.start.getFullYear()).slice(2);
+    }
+    return period.start.getDate() + ' ' + bulanPendek.format(period.start);
+  }
+
+  function periodTitle(period, mode) {
+    if (mode === 'bulanan') return formatMonthLabel(period.start);
+    return 'Mgg ' + isoWeekNumber(period.start) + ' · ' + formatWeekRange(period.start);
+  }
+
+  function niceMax(value) {
+    if (!value) return 1;
+    const power = Math.pow(10, Math.floor(Math.log10(value)));
+    const base = value / power;
+    const step = base <= 1 ? 1 : base <= 2 ? 2 : base <= 5 ? 5 : 10;
+    return step * power;
+  }
+
+  function renderTrendChart(periods, mode) {
+    const metric = state.report.metric;
+    const values = periods.map(metricValue);
+    const maxValue = Math.max.apply(null, values);
+
+    if (!maxValue) return chartEmpty('Belum ada aset pada rentang ini.');
+
+    const W = 720;
+    const H = 260;
+    const padL = 52;
+    const padR = 12;
+    const padT = 20;
+    const padB = 38;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+    const max = metric === 'unit'
+      ? Math.max(4, Math.ceil(maxValue / 4) * 4)
+      : niceMax(maxValue);
+    const slot = plotW / periods.length;
+    const barW = Math.min(40, slot * 0.52);
+
+    let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Grafik tren ' + (metric === 'nilai' ? 'nilai' : 'unit') + ' per ' + (mode === 'bulanan' ? 'bulan' : 'minggu') + '">';
+
+    for (let i = 0; i <= 4; i += 1) {
+      const y = Math.round(padT + plotH - (plotH * i / 4));
+      const tick = max * i / 4;
+      svg += '<line class="chart-grid" x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y + '"/>';
+      svg += '<text class="chart-axis" x="' + (padL - 8) + '" y="' + (y + 3) + '" text-anchor="end">' + compactNumber(tick) + '</text>';
+    }
+
+    periods.forEach((period, index) => {
+      const value = metricValue(period);
+      const height = value ? Math.max(3, Math.round(plotH * value / max)) : 0;
+      const x = padL + slot * index + (slot - barW) / 2;
+      const y = padT + plotH - height;
+      const focus = index === periods.length - 1;
+      const tooltip = periodTitle(period, mode) + ' · ' + (metric === 'nilai' ? rupiah.format(value) : angka.format(value) + ' unit');
+
+      svg += '<rect class="chart-bar' + (focus ? ' is-focus' : '') + '" x="' + Math.round(x) + '" y="' + y + '" width="' + Math.round(barW) + '" height="' + height + '" rx="6">' +
+        '<title>' + esc(tooltip) + '</title></rect>';
+
+      if (value > 0 && periods.length <= 8) {
+        const label = metric === 'nilai' ? compactRupiah(value) : angka.format(value);
+        svg += '<text class="chart-value" x="' + Math.round(x + barW / 2) + '" y="' + (y - 5) + '" text-anchor="middle">' + esc(label) + '</text>';
+      }
+
+      svg += '<text class="chart-axis" x="' + Math.round(x + barW / 2) + '" y="' + (H - 14) + '" text-anchor="middle">' +
+        esc(periodShort(period, mode)) + '</text>';
+    });
+
+    svg += '</svg>';
+    return svg;
+  }
+
+  function renderDonutChart(entries) {
+    const metric = state.report.metric;
+    const data = entries
+      .map((entry) => ({ label: entry.label, value: metricValue(entry) }))
+      .filter((entry) => entry.value > 0);
+
+    if (!data.length) return chartEmpty('Belum ada data kategori pada rentang ini.');
+
+    let groups = data;
+    if (data.length > 6) {
+      const top = data.slice(0, 5);
+      const rest = data.slice(5).reduce((sum, entry) => sum + entry.value, 0);
+      groups = top.concat([{ label: 'Lainnya', value: rest }]);
+    }
+
+    const total = groups.reduce((sum, entry) => sum + entry.value, 0);
+    const size = 220;
+    const center = size / 2;
+    const radius = 78;
+    const thickness = 26;
+    const circumference = 2 * Math.PI * radius;
+    let offset = 0;
+    let circles = '';
+
+    groups.forEach((entry, index) => {
+      const length = circumference * entry.value / total;
+      const color = WARNA_GRAFIK[index % WARNA_GRAFIK.length];
+      circles += '<circle cx="' + center + '" cy="' + center + '" r="' + radius + '" fill="none" stroke="' + color + '"' +
+        ' stroke-width="' + thickness + '" stroke-dasharray="' + length.toFixed(2) + ' ' + (circumference - length).toFixed(2) + '"' +
+        ' stroke-dashoffset="' + (-offset).toFixed(2) + '" transform="rotate(-90 ' + center + ' ' + center + ')">' +
+        '<title>' + esc(entry.label + ' · ' + (metric === 'nilai' ? rupiah.format(entry.value) : angka.format(entry.value) + ' unit')) + '</title></circle>';
+      offset += length;
+    });
+
+    const svg = '<svg viewBox="0 0 ' + size + ' ' + size + '" role="img" aria-label="Komposisi kategori berdasarkan ' + reportMetricLabel() + '">' +
+      circles +
+      '<text class="donut-center-value" x="' + center + '" y="' + (center - 2) + '" text-anchor="middle">' + compactNumber(total) + '</text>' +
+      '<text class="donut-center-label" x="' + center + '" y="' + (center + 14) + '" text-anchor="middle">' + (metric === 'nilai' ? 'total nilai (Rp)' : 'total unit') + '</text>' +
+      '</svg>';
+
+    const legend = groups.map((entry, index) => {
+      const percent = Math.round(entry.value / total * 100);
+      const color = WARNA_GRAFIK[index % WARNA_GRAFIK.length];
+      return '<li><span class="donut-dot" style="background:' + color + '"></span>' +
+        '<span>' + esc(entry.label) + '</span><b>' + percent + '%</b></li>';
+    }).join('');
+
+    return '<div class="donut-wrap">' + svg + '<ul class="donut-legend">' + legend + '</ul></div>';
+  }
+
+  function renderHBar(entries, valueKind) {
+    if (!entries.length) return chartEmpty('Belum ada data pada rentang ini.');
+    const max = Math.max.apply(null, entries.map((entry) => entry.value)) || 1;
+
+    const rows = entries.map((entry) => (
+      '<div class="hbar-row">' +
+        '<span class="hbar-label" title="' + esc(entry.label) + '">' + esc(entry.label) + '</span>' +
+        '<span class="hbar-track"><span class="hbar-fill ' + (entry.className || '') + '" style="width:' +
+          Math.max(4, Math.round(entry.value / max * 100)) + '%"></span></span>' +
+        '<span class="hbar-value">' + (valueKind === 'nilai' ? compactRupiah(entry.value) : angka.format(entry.value) + ' unit') + '</span>' +
+      '</div>'
+    )).join('');
+
+    return '<div class="hbar-list">' + rows + '</div>';
+  }
+
+  function deltaHtml(current, prev, kind) {
+    const diff = (current || 0) - (prev || 0);
+    if (!current && !prev) return '<span class="kpi-delta flat">—</span>';
+    if (diff === 0) return '<span class="kpi-delta flat">sama</span>';
+    const text = kind === 'nilai' ? compactRupiah(Math.abs(diff)) : angka.format(Math.abs(diff));
+    return '<span class="kpi-delta ' + (diff > 0 ? 'up' : 'down') + '">' + (diff > 0 ? '▲' : '▼') + ' ' + text + '</span>';
+  }
+
+  function syncSegment(selector, active) {
+    const el = $(selector);
+    if (!el) return;
+    el.classList.toggle('is-active', active);
+    el.setAttribute('aria-pressed', active ? 'true' : 'false');
+  }
+
+  function renderDashboard() {
+    const report = state.report;
+    const mode = report.mode;
+    const metric = report.metric;
+    const weekly = mode === 'mingguan';
+    const data = collectReport(state.items, report.source, mode, report.offset);
+    const focus = data.focus;
+    const prev = data.prev;
+
+    $('#reportSource').value = report.source;
+    syncSegment('#reportModeWeekly', weekly);
+    syncSegment('#reportModeMonthly', !weekly);
+    syncSegment('#reportMetricUnit', metric === 'unit');
+    syncSegment('#reportMetricValue', metric === 'nilai');
+
+    const focusLabel = weekly ? formatWeekRange(focus.start) : formatMonthLabel(focus.start);
+    const windowLabel = (weekly ? REPORT_WEEKS + ' minggu' : REPORT_MONTHS + ' bulan') + ' hingga ' + focusLabel;
+
+    $('#reportHint').textContent = weekly
+      ? 'Ringkasan aset per minggu, mulai Senin sampai Minggu.'
+      : 'Ringkasan aset per bulan dalam kalender.';
+    $('#reportRange').textContent = weekly
+      ? 'Mgg ' + isoWeekNumber(focus.start) + ' · ' + focusLabel
+      : focusLabel;
+    $('#reportWindow').textContent = windowLabel;
+    $('#reportNext').disabled = report.offset === 0;
+    $('#reportToday').disabled = report.offset === 0;
+
+    const tanpa = data.tanpaTanggal;
+    const note = $('#reportNoDate');
+    if (tanpa.jenis > 0) {
+      const sumber = report.source === 'createdAt' ? 'tanggal input' : 'tanggal perolehan';
+      note.hidden = false;
+      note.textContent = angka.format(tanpa.jenis) + ' aset tanpa ' + sumber +
+        ' tidak masuk grafik tren (' + angka.format(tanpa.unit) + ' unit, ' + compactRupiah(tanpa.nilai) + ').';
+    } else {
+      note.hidden = true;
+      note.textContent = '';
+    }
+
+    const kategoriTeratas = data.kategori[0];
+    const kpi = [
+      {
+        label: 'Aset masuk',
+        value: angka.format(focus.jenis),
+        note: deltaHtml(focus.jenis, prev.jenis, 'unit') + ' dari periode sebelumnya'
+      },
+      {
+        label: 'Unit masuk',
+        value: angka.format(focus.unit),
+        note: deltaHtml(focus.unit, prev.unit, 'unit') + ' dari periode sebelumnya'
+      },
+      {
+        label: 'Nilai masuk',
+        value: compactRupiah(focus.nilai),
+        note: deltaHtml(focus.nilai, prev.nilai, 'nilai') + ' dari periode sebelumnya'
+      },
+      {
+        label: 'Kategori teratas',
+        value: kategoriTeratas ? kategoriTeratas.label : '—',
+        note: kategoriTeratas
+          ? (metric === 'nilai' ? compactRupiah(kategoriTeratas.nilai) : angka.format(kategoriTeratas.unit) + ' unit') + ' pada rentang ini'
+          : 'Belum ada data pada rentang ini'
+      }
+    ];
+
+    $('#dashKpis').innerHTML = kpi.map((item) => (
+      '<div class="kpi">' +
+        '<p class="kpi-label">' + esc(item.label) + '</p>' +
+        '<strong class="kpi-value" title="' + esc(item.label + ': ' + item.value) + '">' + esc(item.value) + '</strong>' +
+        '<p class="kpi-note">' + item.note + '</p>' +
+      '</div>'
+    )).join('');
+
+    $('#trendModeLabel').textContent = weekly ? 'minggu' : 'bulan';
+    $('#trendSub').textContent = (weekly ? REPORT_WEEKS + ' minggu' : REPORT_MONTHS + ' bulan') + ' terakhir';
+    $('#kategoriSub').textContent = 'Berdasarkan ' + reportMetricLabel() + ' · ' + (weekly ? REPORT_WEEKS + ' minggu' : REPORT_MONTHS + ' bulan') + ' terakhir';
+    $('#lokasiSub').textContent = 'Berdasarkan ' + reportMetricLabel() + ' · ' + (weekly ? REPORT_WEEKS + ' minggu' : REPORT_MONTHS + ' bulan') + ' terakhir';
+    $('#rekapSub').textContent = windowLabel;
+
+    $('#trendChart').innerHTML = renderTrendChart(data.periods, mode);
+    $('#kategoriChart').innerHTML = renderDonutChart(data.kategori);
+    $('#lokasiChart').innerHTML = renderHBar(
+      data.lokasi.map((entry) => ({ label: entry.label, value: metricValue(entry) })),
+      metric
+    );
+
+    const kondisiTotal = KONDISI.reduce((sum, key) => sum + (data.kondisi[key] || 0), 0);
+    $('#kondisiChart').innerHTML = kondisiTotal
+      ? renderHBar(KONDISI.map((key) => ({
+        label: key,
+        value: data.kondisi[key] || 0,
+        className: 'kondisi-' + (key === 'Baik' ? 'baik' : key === 'Rusak Ringan' ? 'ringan' : 'berat')
+      })), 'unit')
+      : chartEmpty('Belum ada data kondisi pada rentang ini.');
+
+    const rows = data.periods.slice().reverse();
+    const total = rows.reduce((acc, period) => {
+      acc.jenis += period.jenis;
+      acc.unit += period.unit;
+      acc.nilai += period.nilai;
+      return acc;
+    }, { jenis: 0, unit: 0, nilai: 0 });
+
+    $('#reportRows').innerHTML = rows.map((period) => {
+      const label = weekly
+        ? 'Mgg ' + isoWeekNumber(period.start) + ' · ' + period.start.getFullYear()
+        : formatMonthLabel(period.start);
+      const range = weekly ? formatWeekRange(period.start) : formatMonthRange(period.start, period.end);
+      const isFocus = period.key === focus.key;
+      return '<tr' + (isFocus ? ' class="is-focus"' : '') + '>' +
+        '<td>' + esc(label) + '</td>' +
+        '<td class="hide-sm">' + esc(range) + '</td>' +
+        '<td class="num">' + angka.format(period.jenis) + '</td>' +
+        '<td class="num">' + angka.format(period.unit) + '</td>' +
+        '<td class="num">' + rupiah.format(period.nilai) + '</td>' +
+      '</tr>';
+    }).join('') +
+      '<tr class="report-total">' +
+        '<td>Total</td>' +
+        '<td class="hide-sm">' + esc(windowLabel) + '</td>' +
+        '<td class="num">' + angka.format(total.jenis) + '</td>' +
+        '<td class="num">' + angka.format(total.unit) + '</td>' +
+        '<td class="num">' + rupiah.format(total.nilai) + '</td>' +
+      '</tr>';
+  }
+
   function renderKategoriOptions() {
     const set = new Set(KATEGORI_UMUM);
     state.items.forEach((a) => { if (a.kategori) set.add(a.kategori); });
@@ -732,6 +1235,7 @@
 
   function renderAll() {
     renderStats();
+    renderDashboard();
     renderTable();
   }
 
@@ -1555,6 +2059,88 @@
     };
   }
 
+  function buildLaporanSheet(items, mode) {
+    const weekly = mode !== 'bulanan';
+    const source = state.report.source;
+    const offset = state.report.mode === mode ? state.report.offset : 0;
+    const data = collectReport(items, source, mode, offset);
+    const sumberLabel = source === 'createdAt' ? 'Tanggal input' : 'Tanggal perolehan';
+    const windowLabel = (weekly ? REPORT_WEEKS + ' minggu' : REPORT_MONTHS + ' bulan') + ' hingga ' +
+      (weekly ? formatWeekRange(data.focus.start) : formatMonthLabel(data.focus.start));
+    const headers = ['Periode', 'Mulai', 'Selesai', 'Jumlah Aset', 'Total Unit', 'Nilai Total'];
+
+    const rows = [];
+    rows.push(xlsxRow(1, [xlsxCell('A1', weekly ? 'Laporan Mingguan' : 'Laporan Bulanan', STYLE.title)], 30));
+    rows.push(xlsxRow(2, [
+      xlsxCell('A2', 'AsetKu · ' + sumberLabel + ' · ' + windowLabel, STYLE.muted)
+    ], 18));
+    rows.push(xlsxRow(4, headers.map((h, i) => xlsxCell(colName(i + 1) + '4', h, STYLE.header)), 28));
+
+    let totalJenis = 0;
+    let totalUnit = 0;
+    let totalNilai = 0;
+    let r = 5;
+
+    data.periods.forEach((period) => {
+      const label = weekly
+        ? 'Mgg ' + isoWeekNumber(period.start) + ' · ' + period.start.getFullYear()
+        : formatMonthLabel(period.start);
+      rows.push(xlsxRow(r, [
+        xlsxCell('A' + r, label, STYLE.text),
+        xlsxCell('B' + r, { date: isoOf(period.start) }, STYLE.date),
+        xlsxCell('C' + r, { date: isoOf(period.end) }, STYLE.date),
+        xlsxCell('D' + r, period.jenis, STYLE.integer),
+        xlsxCell('E' + r, period.unit, STYLE.integer),
+        xlsxCell('F' + r, period.nilai, STYLE.currency)
+      ]));
+      totalJenis += period.jenis;
+      totalUnit += period.unit;
+      totalNilai += period.nilai;
+      r += 1;
+    });
+
+    const lastDataRow = r - 1;
+    const table = {
+      id: weekly ? 3 : 4,
+      name: weekly ? 'LaporanMingguan' : 'LaporanBulanan',
+      ref: 'A4:F' + lastDataRow,
+      columns: headers
+    };
+
+    rows.push(xlsxRow(r, [
+      xlsxCell('A' + r, 'TOTAL', STYLE.totalLabel),
+      xlsxCell('B' + r, '', STYLE.totalLabel),
+      xlsxCell('C' + r, '', STYLE.totalLabel),
+      xlsxCell('D' + r, totalJenis, STYLE.totalInteger),
+      xlsxCell('E' + r, totalUnit, STYLE.totalInteger),
+      xlsxCell('F' + r, totalNilai, STYLE.totalCurrency)
+    ], 22));
+
+    const totalRow = r;
+    const merges = ['A1:F1', 'A2:F2'];
+    let dimension = 'A1:F' + totalRow;
+
+    const tanpa = data.tanpaTanggal;
+    if (tanpa.jenis > 0) {
+      const noteRow = totalRow + 2;
+      const note = angka.format(tanpa.jenis) + ' aset tanpa ' + sumberLabel.toLowerCase() +
+        ' tidak masuk laporan (' + angka.format(tanpa.unit) + ' unit, ' + rupiah.format(tanpa.nilai) + ').';
+      rows.push(xlsxRow(noteRow, [xlsxCell('A' + noteRow, note, STYLE.muted)], 18));
+      merges.push('A' + noteRow + ':F' + noteRow);
+      dimension = 'A1:F' + noteRow;
+    }
+
+    return {
+      xml: sheetXml(rows.join(''), {
+        dimension,
+        cols: colsXml([22, 14, 14, 14, 14, 20]),
+        tableParts: ['rId1'],
+        merges
+      }),
+      table
+    };
+  }
+
   function stylesXml() {
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
@@ -1609,7 +2195,9 @@
     const sheets = [
       Object.assign({ name: 'Data Aset' }, buildDataSheet(items)),
       { name: 'Ringkasan', xml: buildSummarySheet(items), table: null },
-      Object.assign({ name: 'Rekap Kategori' }, buildKategoriSheet(items))
+      Object.assign({ name: 'Rekap Kategori' }, buildKategoriSheet(items)),
+      Object.assign({ name: 'Laporan Mingguan' }, buildLaporanSheet(items, 'mingguan')),
+      Object.assign({ name: 'Laporan Bulanan' }, buildLaporanSheet(items, 'bulanan'))
     ];
     const tables = sheets.filter((sheet) => sheet.table).map((sheet) => sheet.table);
 
@@ -1898,6 +2486,50 @@
     $('#themeToggle').addEventListener('click', () => {
       const current = document.documentElement.getAttribute('data-theme');
       applyTheme(current === 'dark' ? 'light' : 'dark', true);
+    });
+
+    /* Dashboard & laporan */
+    $('#reportSource').addEventListener('change', (e) => {
+      state.report.source = e.target.value === 'createdAt' ? 'createdAt' : 'tanggal';
+      saveUiPrefs();
+      renderDashboard();
+    });
+
+    const setReportMode = (mode) => {
+      if (state.report.mode === mode) return;
+      state.report.mode = mode;
+      state.report.offset = 0;
+      saveUiPrefs();
+      renderDashboard();
+    };
+
+    $('#reportModeWeekly').addEventListener('click', () => setReportMode('mingguan'));
+    $('#reportModeMonthly').addEventListener('click', () => setReportMode('bulanan'));
+
+    const setReportMetric = (metric) => {
+      if (state.report.metric === metric) return;
+      state.report.metric = metric;
+      saveUiPrefs();
+      renderDashboard();
+    };
+
+    $('#reportMetricUnit').addEventListener('click', () => setReportMetric('unit'));
+    $('#reportMetricValue').addEventListener('click', () => setReportMetric('nilai'));
+
+    $('#reportPrev').addEventListener('click', () => {
+      state.report.offset = Math.min(state.report.offset + 1, 520);
+      renderDashboard();
+    });
+
+    $('#reportNext').addEventListener('click', () => {
+      state.report.offset = Math.max(0, state.report.offset - 1);
+      renderDashboard();
+    });
+
+    $('#reportToday').addEventListener('click', () => {
+      if (state.report.offset === 0) return;
+      state.report.offset = 0;
+      renderDashboard();
     });
 
     /* Form */
@@ -2448,6 +3080,7 @@
 
   /* ---------------- Inisialisasi ---------------- */
   function init() {
+    loadUiPrefs();
     bindEvents();
     bindAuthEvents();
 

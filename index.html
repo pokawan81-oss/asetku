@@ -335,6 +335,113 @@
       </article>
     </section>
 
+    <!-- ================= Dashboard & Laporan ================= -->
+    <section class="dashboard" aria-labelledby="dashboardTitle">
+      <div class="dash-head">
+        <div class="dash-title">
+          <h2 id="dashboardTitle">Dashboard &amp; Laporan</h2>
+          <p class="dash-sub" id="reportHint">Ringkasan aset per minggu.</p>
+        </div>
+
+        <div class="dash-controls">
+          <label class="dash-select" for="reportSource">
+            <span>Sumber tanggal</span>
+            <select class="input select" id="reportSource">
+              <option value="tanggal">Tanggal perolehan</option>
+              <option value="createdAt">Tanggal input</option>
+            </select>
+          </label>
+
+          <div class="segmented" role="group" aria-label="Periode laporan">
+            <button class="seg-btn is-active" type="button" id="reportModeWeekly" aria-pressed="true">Mingguan</button>
+            <button class="seg-btn" type="button" id="reportModeMonthly" aria-pressed="false">Bulanan</button>
+          </div>
+
+          <div class="segmented" role="group" aria-label="Metrik grafik">
+            <button class="seg-btn is-active" type="button" id="reportMetricUnit" aria-pressed="true">Unit</button>
+            <button class="seg-btn" type="button" id="reportMetricValue" aria-pressed="false">Nilai</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-nav">
+        <button class="icon-btn" type="button" id="reportPrev" aria-label="Periode sebelumnya" title="Periode sebelumnya">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m15 6-6 6 6 6" />
+          </svg>
+        </button>
+        <div class="dash-range">
+          <strong id="reportRange">—</strong>
+          <span id="reportWindow">—</span>
+        </div>
+        <button class="icon-btn" type="button" id="reportNext" aria-label="Periode berikutnya" title="Periode berikutnya" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m9 6 6 6-6 6" />
+          </svg>
+        </button>
+        <button class="btn btn-ghost btn-sm" type="button" id="reportToday">Terbaru</button>
+      </div>
+
+      <p class="dash-note" id="reportNoDate" hidden></p>
+
+      <div class="dash-kpis" id="dashKpis" aria-live="polite"></div>
+
+      <div class="dash-grid">
+        <article class="dash-card dash-span-2">
+          <div class="dash-card-head">
+            <h3>Tren per <span id="trendModeLabel">minggu</span></h3>
+            <span class="dash-card-sub" id="trendSub">8 minggu terakhir</span>
+          </div>
+          <div class="chart" id="trendChart"></div>
+        </article>
+
+        <article class="dash-card">
+          <div class="dash-card-head">
+            <h3>Komposisi kategori</h3>
+            <span class="dash-card-sub" id="kategoriSub">Berdasarkan unit</span>
+          </div>
+          <div class="chart chart-donut" id="kategoriChart"></div>
+        </article>
+
+        <article class="dash-card">
+          <div class="dash-card-head">
+            <h3>Kondisi aset</h3>
+            <span class="dash-card-sub">Dalam rentang laporan</span>
+          </div>
+          <div class="chart chart-hbar" id="kondisiChart"></div>
+        </article>
+
+        <article class="dash-card dash-span-2">
+          <div class="dash-card-head">
+            <h3>Top 5 lokasi</h3>
+            <span class="dash-card-sub" id="lokasiSub">Berdasarkan unit</span>
+          </div>
+          <div class="chart chart-hbar" id="lokasiChart"></div>
+        </article>
+      </div>
+
+      <div class="dash-table">
+        <div class="dash-card-head">
+          <h3>Rekap periode</h3>
+          <span class="dash-card-sub" id="rekapSub">8 minggu terakhir</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Periode</th>
+                <th scope="col" class="hide-sm">Rentang</th>
+                <th scope="col" class="num">Aset</th>
+                <th scope="col" class="num">Unit</th>
+                <th scope="col" class="num">Nilai</th>
+              </tr>
+            </thead>
+            <tbody id="reportRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
     <section class="panel" aria-label="Daftar aset">
       <div class="toolbar">
         <div class="search">

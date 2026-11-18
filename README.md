@@ -16,9 +16,10 @@ Data aset disimpan otomatis di **localStorage** browser, sehingga tetap ada wala
 - **Pencarian** berdasarkan nama, kode, kategori, lokasi, atau keterangan.
 - **Filter** kategori & kondisi, serta **pengurutan** (terbaru, nama, nilai, tanggal).
 - **Ringkasan statistik**: total unit, total nilai aset, jumlah kategori, dan unit yang perlu perhatian.
+- **Dashboard & laporan** — tren mingguan/bulanan, komposisi kategori, kondisi aset, top 5 lokasi, KPI per periode, dan tabel rekap; sumber tanggal (perolehan/input) serta metrik (unit/nilai) dapat dipilih.
 - **Paginasi** otomatis.
 - **Penyimpanan otomatis** di browser (localStorage) + status "Tersimpan".
-- **Ekspor Excel (.xlsx)** asli dengan 3 sheet: Data Aset, Ringkasan, dan Rekap Kategori — lengkap dengan format rupiah, tanggal, baris total, dan **tombol filter di setiap kolom**.
+- **Ekspor Excel (.xlsx)** asli dengan 5 sheet: Data Aset, Ringkasan, Rekap Kategori, Laporan Mingguan, dan Laporan Bulanan — lengkap dengan format rupiah, tanggal, baris total, dan **tombol filter di setiap kolom**.
 - **Ekspor CSV** dan **cadangan/impor JSON**.
 - **Mode terang & gelap** (tersimpan otomatis).
 - **Muat contoh data** untuk mencoba aplikasi dengan cepat.
@@ -51,6 +52,27 @@ python -m http.server 8000
 
 Jika penyimpanan browser gagal (mis. ruang penuh), form tetap terbuka dan data tidak dianggap tersimpan.
 
+## Dashboard & Laporan
+
+Di bawah kartu statistik terdapat panel **Dashboard & Laporan** yang merangkum aset per periode.
+
+- **Sumber tanggal** — pilih **Tanggal perolehan** atau **Tanggal input** (`createdAt`) sebagai dasar pengelompokan.
+- **Mingguan / Bulanan** — minggu mengikuti kalender Senin–Minggu, bulan mengikuti bulan kalender.
+- **Unit / Nilai** — mengganti satuan grafik antara jumlah unit dan total nilai (jumlah × harga).
+- **Navigasi periode** — tombol ‹ › menggeser periode fokus satu minggu/bulan; **Terbaru** kembali ke periode berjalan.
+- Jendela laporan menampilkan **8 minggu** atau **6 bulan** terakhir yang berakhir pada periode fokus.
+
+Isi panel:
+
+1. **KPI periode fokus** — aset masuk, unit masuk, nilai masuk, dan kategori teratas, lengkap dengan selisih terhadap periode sebelumnya.
+2. **Tren per minggu/bulan** — grafik batang; batang paling kanan adalah periode fokus.
+3. **Komposisi kategori** — diagram donat beserta persentasenya.
+4. **Kondisi aset** — Baik, Rusak Ringan, dan Rusak Berat.
+5. **Top 5 lokasi**.
+6. **Rekap periode** — jumlah aset, unit, dan nilai tiap periode, ditutup baris TOTAL.
+
+Aset tanpa tanggal sesuai sumber (misalnya tanggal perolehan kosong) tidak diikutkan pada tren, tetapi jumlahnya dijelaskan pada catatan di atas KPI. Preferensi sumber, mode, dan metrik tersimpan otomatis di browser.
+
 ## Struktur File
 
 ```
@@ -72,6 +94,7 @@ Aset WEB/
 | `asetku.users.v1` | Akun pengelola (username, salt, dan hash kata sandi) |
 | `asetku.session.v1` | Sesi login (localStorage bila "Ingat saya", selain itu sessionStorage) |
 | `asetku.theme` | Preferensi tema (`light` / `dark`) |
+| `asetku.ui.v1` | Preferensi dashboard (sumber tanggal, mode mingguan/bulanan, metrik unit/nilai) |
 
 Data tersimpan **per browser dan per perangkat** — tidak tersinkron ke komputer lain dan tidak dikirim ke internet.
 
@@ -99,16 +122,19 @@ Buka menu **Data → Ekspor Excel (.xlsx)**. File `.xlsx` dibuat langsung di bro
 | **Data Aset** | Semua aset dengan header berwarna, baris beku (freeze), **tombol filter di setiap kolom**, format rupiah, tanggal `dd/mm/yyyy`, dan baris TOTAL. |
 | **Ringkasan** | Statistik umum (jumlah jenis, total unit, total nilai, rata-rata nilai, aset termahal) dan sebaran kondisi. |
 | **Rekap Kategori** | Jumlah jenis, total unit, nilai total, dan porsi nilai per kategori, diurutkan dari nilai terbesar. |
+| **Laporan Mingguan** | 8 minggu terakhir: periode, tanggal mulai/selesai, jumlah aset, total unit, dan nilai total, ditutup baris TOTAL. |
+| **Laporan Bulanan** | 6 bulan terakhir dengan kolom dan format yang sama seperti laporan mingguan. |
 
 - Ekspor selalu memuat **seluruh data**, bukan hanya halaman yang sedang tampil.
 - Urutan baris mengikuti pilihan **Urutkan** yang aktif.
 - Kolom angka disimpan sebagai angka asli (bisa dihitung ulang di Excel), bukan teks.
 - Nama file: `data-aset-YYYY-MM-DD.xlsx`.
 - **Ekspor CSV** tetap tersedia untuk kebutuhan impor ke aplikasi lain.
+- Sumber tanggal pada kedua sheet laporan mengikuti pilihan di dashboard. Jika fokus periode sedang digeser, sheet dengan mode yang sama ikut bergeser; sheet mode lainnya memakai periode terbaru.
 
 ### Memfilter di Excel
 
-Sheet **Data Aset** dan **Rekap Kategori** diekspor sebagai **Tabel Excel** (`DataAset`, `RekapKategori`), sehingga tombol panah filter langsung tersedia di setiap header kolom:
+Sheet **Data Aset**, **Rekap Kategori**, **Laporan Mingguan**, dan **Laporan Bulanan** diekspor sebagai **Tabel Excel** (`DataAset`, `RekapKategori`, `LaporanMingguan`, `LaporanBulanan`), sehingga tombol panah filter langsung tersedia di setiap header kolom:
 
 1. Buka file `.xlsx` di Excel, lalu klik **Enable Editing** jika muncul Protected View.
 2. Klik panah filter pada header kolom (mis. **Kategori** atau **Kondisi**).
@@ -125,6 +151,8 @@ Buka `assets/js/app.js` di bagian atas:
 const KATEGORI_UMUM = ['Elektronik', 'Furnitur', ...]; // saran kategori
 const SATUAN_UMUM   = ['Unit', 'Buah', 'Set', ...];    // saran satuan
 const PAGE_SIZE     = 8;                               // jumlah baris per halaman
+const REPORT_WEEKS  = 8;                               // jumlah minggu di dashboard
+const REPORT_MONTHS = 6;                               // jumlah bulan di dashboard
 const CONTOH        = [ ... ];                         // isi tombol "Muat contoh data"
 ```
 
