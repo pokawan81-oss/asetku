@@ -15,8 +15,8 @@ Data aset disimpan otomatis di **localStorage** browser, sehingga tetap ada wala
 - **Detail aset** dalam modal, termasuk nilai total.
 - **Pencarian** berdasarkan nama, kode, kategori, lokasi, atau keterangan.
 - **Filter** kategori & kondisi, serta **pengurutan** (terbaru, nama, nilai, tanggal).
-- **Ringkasan statistik**: total unit, total nilai aset, jumlah kategori, dan unit yang perlu perhatian.
-- **Dashboard & laporan** — tren mingguan/bulanan, komposisi kategori, kondisi aset, top 5 lokasi, KPI per periode, dan tabel rekap; sumber tanggal (perolehan/input) serta metrik (unit/nilai) dapat dipilih.
+- **Kartu ringkasan** di dashboard: total aset, total unit, kondisi aktif/maintenance/rusak, dan total nilai.
+- **Dashboard & laporan** — KPI keseluruhan, tren mingguan/bulanan, komposisi kategori, top lokasi, kondisi aset, nilai per kategori, aset terbaru, dan tabel rekap; sumber tanggal (perolehan/input) serta metrik (unit/nilai) dapat dipilih.
 - **Paginasi** otomatis.
 - **Penyimpanan otomatis** di browser (localStorage) + status "Tersimpan".
 - **Ekspor Excel (.xlsx)** asli dengan 5 sheet: Data Aset, Ringkasan, Rekap Kategori, Laporan Mingguan, dan Laporan Bulanan — lengkap dengan format rupiah, tanggal, baris total, dan **tombol filter di setiap kolom**.
@@ -52,10 +52,11 @@ python -m http.server 8000
 
 Jika penyimpanan browser gagal (mis. ruang penuh), form tetap terbuka dan data tidak dianggap tersimpan.
 
-## Dashboard & Laporan
+## Dashboard
 
-Di bawah kartu statistik terdapat panel **Dashboard & Laporan** yang merangkum aset per periode.
+Halaman utama dibuka dengan panel **Dashboard** yang merangkum seluruh aset.
 
+- **Kartu KPI** — Total Aset (jumlah jenis), Total Unit, Aktif (kondisi Baik), Maintenance (Rusak Ringan), Rusak (Rusak Berat), dan Total Nilai.
 - **Sumber tanggal** — pilih **Tanggal perolehan** atau **Tanggal input** (`createdAt`) sebagai dasar pengelompokan.
 - **Mingguan / Bulanan** — minggu mengikuti kalender Senin–Minggu, bulan mengikuti bulan kalender.
 - **Unit / Nilai** — mengganti satuan grafik antara jumlah unit dan total nilai (jumlah × harga).
@@ -64,14 +65,16 @@ Di bawah kartu statistik terdapat panel **Dashboard & Laporan** yang merangkum a
 
 Isi panel:
 
-1. **KPI periode fokus** — aset masuk, unit masuk, nilai masuk, dan kategori teratas, lengkap dengan selisih terhadap periode sebelumnya.
-2. **Tren per minggu/bulan** — grafik batang; batang paling kanan adalah periode fokus.
-3. **Komposisi kategori** — diagram donat beserta persentasenya.
-4. **Kondisi aset** — Baik, Rusak Ringan, dan Rusak Berat.
-5. **Top 5 lokasi**.
-6. **Rekap periode** — jumlah aset, unit, dan nilai tiap periode, ditutup baris TOTAL.
+1. **Aset per Kategori** — diagram donat beserta legenda jumlah unit dan persentasenya.
+2. **Aset per Lokasi** — grafik batang vertikal untuk lokasi dengan unit/nilai terbanyak pada rentang laporan.
+3. **Aset per Kondisi** — diagram pie jumlah aset per kondisi (Baik, Rusak Ringan, Rusak Berat) pada rentang laporan.
+4. **Tren per minggu/bulan** — grafik batang; batang paling kanan adalah periode fokus.
+5. **Nilai per Kategori** — lima kategori dengan nilai terbesar.
+6. **Aset Terbaru** — lima entri terakhir yang ditambahkan.
+7. **Ringkasan Kondisi** — jumlah aset, unit, dan nilai untuk setiap kondisi dari seluruh data.
+8. **Rekap periode** — jumlah aset, unit, dan nilai tiap periode, ditutup baris TOTAL.
 
-Aset tanpa tanggal sesuai sumber (misalnya tanggal perolehan kosong) tidak diikutkan pada tren, tetapi jumlahnya dijelaskan pada catatan di atas KPI. Preferensi sumber, mode, dan metrik tersimpan otomatis di browser.
+Aset tanpa tanggal sesuai sumber (misalnya tanggal perolehan kosong) tidak diikutkan pada tren, tetapi jumlahnya dijelaskan pada catatan di atas grafik. Preferensi sumber, mode, dan metrik tersimpan otomatis di browser.
 
 ## Struktur File
 

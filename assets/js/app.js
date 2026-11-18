@@ -16,6 +16,7 @@
   const REPORT_WEEKS = 8;
   const REPORT_MONTHS = 6;
   const WARNA_GRAFIK = ['#2563eb', '#22c55e', '#f59e0b', '#a855f7', '#ef4444', '#14b8a6', '#64748b'];
+  const WARNA_KONDISI = { 'Baik': '#22c55e', 'Rusak Ringan': '#f59e0b', 'Rusak Berat': '#ef4444' };
 
   const PBKDF2_ITERATIONS = 150000;
   const SESSION_TTL = 30 * 24 * 60 * 60 * 1000; /* 30 hari untuk "Ingat saya" */
@@ -636,21 +637,6 @@
   }
 
   /* ---------------- Render ---------------- */
-  function renderStats() {
-    const items = state.items;
-    const unit = items.reduce((sum, a) => sum + (Number(a.jumlah) || 0), 0);
-    const nilai = items.reduce((sum, a) => sum + nilaiAset(a), 0);
-    const kategori = new Set(items.map((a) => a.kategori).filter(Boolean)).size;
-    const rusak = items
-      .filter((a) => a.kondisi !== 'Baik')
-      .reduce((sum, a) => sum + (Number(a.jumlah) || 0), 0);
-
-    $('#statUnit').textContent = angka.format(unit);
-    $('#statNilai').textContent = rupiah.format(nilai);
-    $('#statKategori').textContent = angka.format(kategori);
-    $('#statRusak').textContent = angka.format(rusak);
-  }
-
   /* ---------------- Dashboard & laporan ---------------- */
   function loadUiPrefs() {
     try {
@@ -768,7 +754,7 @@
       lokasiMap.set(lokasi, lokasiEntry);
 
       const kondisiKey = kondisi[item.kondisi] == null ? 'Baik' : item.kondisi;
-      kondisi[kondisiKey] += unit;
+      kondisi[kondisiKey] += 1;
     });
 
     const urutMetric = (a, b) => (
@@ -850,7 +836,7 @@
       const focus = index === periods.length - 1;
       const tooltip = periodTitle(period, mode) + ' · ' + (metric === 'nilai' ? rupiah.format(value) : angka.format(value) + ' unit');
 
-      svg += '<rect class="chart-bar' + (focus ? ' is-focus' : '') + '" x="' + Math.round(x) + '" y="' + y + '" width="' + Math.round(barW) + '" height="' + height + '" rx="6">' +
+      svg += '<rect class="chart-bar' + (focus ? ' is-focus' : '') + '" fill-opacity="' + (focus ? '1' : '0.55') + '" x="' + Math.round(x) + '" y="' + y + '" width="' + Math.round(barW) + '" height="' + height + '" rx="6">' +
         '<title>' + esc(tooltip) + '</title></rect>';
 
       if (value > 0 && periods.length <= 8) {
@@ -932,12 +918,150 @@
     return '<div class="hbar-list">' + rows + '</div>';
   }
 
-  function deltaHtml(current, prev, kind) {
-    const diff = (current || 0) - (prev || 0);
-    if (!current && !prev) return '<span class="kpi-delta flat">—</span>';
-    if (diff === 0) return '<span class="kpi-delta flat">sama</span>';
-    const text = kind === 'nilai' ? compactRupiah(Math.abs(diff)) : angka.format(Math.abs(diff));
-    return '<span class="kpi-delta ' + (diff > 0 ? 'up' : 'down') + '">' + (diff > 0 ? '▲' : '▼') + ' ' + text + '</span>';
+  function renderBarChart(entries) {
+    if (!entries.length) return chartEmpty('Belum ada data lokasi pada rentang ini.');
+    const metric = state.report.metric;
+    const maxValue = Math.max.apply(null, entries.map((entry) => entry.value));
+    if (!maxValue) return chartEmpty('Belum ada data lokasi pada rentang ini.');
+
+    const W = 420;
+    const H = 252;
+    const padL = 42;
+    const padR = 8;
+    const padT = 18;
+    const padB = 82;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+    const max = metric === 'nilai' ? niceMax(maxValue) : Math.max(2, Math.ceil(maxValue / 3) * 3);
+    const slot = plotW / entries.length;
+    const barW = Math.min(48, slot * 0.56);
+
+    let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Aset per lokasi">';
+
+    for (let i = 0; i <= 3; i += 1) {
+      const y = Math.round(padT + plotH - (plotH * i / 3));
+      const tick = max * i / 3;
+      svg += '<line class="chart-grid" x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y + '"/>';
+      svg += '<text class="chart-axis" x="' + (padL - 7) + '" y="' + (y + 3) + '" text-anchor="end">' + compactNumber(tick) + '</text>';
+    }
+
+    entries.forEach((entry, index) => {
+      const height = entry.value ? Math.max(3, Math.round(plotH * entry.value / max)) : 0;
+      const x = padL + slot * index + (slot - barW) / 2;
+      const y = padT + plotH - height;
+      const tooltip = entry.label + ' · ' + (metric === 'nilai' ? rupiah.format(entry.value) : angka.format(entry.value) + ' unit');
+
+      svg += '<rect class="chart-bar" x="' + Math.round(x) + '" y="' + y + '" width="' + Math.round(barW) + '" height="' + height + '" rx="4">' +
+        '<title>' + esc(tooltip) + '</title></rect>';
+
+      const short = entry.label.length > 16 ? entry.label.slice(0, 15) + '…' : entry.label;
+      const lx = Math.round(padL + slot * index + slot / 2);
+      const ly = H - padB + 15;
+      svg += '<text class="chart-axis bar-label" x="' + lx + '" y="' + ly + '" text-anchor="end" transform="rotate(-32 ' + lx + ' ' + ly + ')">' +
+        esc(short) + '</text>';
+    });
+
+    svg += '</svg>';
+    return svg;
+  }
+
+  function renderPieChart(entries) {
+    const data = entries.filter((entry) => entry.value > 0);
+    if (!data.length) return chartEmpty('Belum ada data kondisi pada rentang ini.');
+
+    const total = data.reduce((sum, entry) => sum + entry.value, 0);
+    const size = 220;
+    const center = size / 2;
+    const radius = 92;
+    const rad = (deg) => (deg - 90) * Math.PI / 180;
+    let angle = 0;
+
+    const slices = data.map((entry) => {
+      const sweep = entry.value / total * 360;
+      const start = angle;
+      const end = angle + sweep;
+      angle = end;
+      const color = entry.color || WARNA_KONDISI[entry.label] || WARNA_GRAFIK[0];
+      const tooltip = entry.label + ' · ' + angka.format(entry.value);
+
+      if (sweep >= 359.99) {
+        return '<circle cx="' + center + '" cy="' + center + '" r="' + radius + '" fill="' + color + '">' +
+          '<title>' + esc(tooltip) + '</title></circle>';
+      }
+
+      const x1 = center + radius * Math.cos(rad(start));
+      const y1 = center + radius * Math.sin(rad(start));
+      const x2 = center + radius * Math.cos(rad(end));
+      const y2 = center + radius * Math.sin(rad(end));
+      const large = sweep > 180 ? 1 : 0;
+
+      return '<path d="M' + center + ' ' + center + ' L' + x1.toFixed(2) + ' ' + y1.toFixed(2) +
+        ' A' + radius + ' ' + radius + ' 0 ' + large + ' 1 ' + x2.toFixed(2) + ' ' + y2.toFixed(2) + ' Z" fill="' + color + '">' +
+        '<title>' + esc(tooltip) + '</title></path>';
+    }).join('');
+
+    const svg = '<svg viewBox="0 0 ' + size + ' ' + size + '" role="img" aria-label="Aset per kondisi">' + slices + '</svg>';
+    const legend = data.map((entry) => {
+      const percent = Math.round(entry.value / total * 100);
+      const color = entry.color || WARNA_KONDISI[entry.label] || WARNA_GRAFIK[0];
+      return '<li><span class="donut-dot" style="background:' + color + '"></span>' +
+        '<span>' + esc(entry.label) + '</span><b>' + angka.format(entry.value) + ' · ' + percent + '%</b></li>';
+    }).join('');
+
+    return '<div class="pie-wrap">' + svg + '<ul class="pie-legend">' + legend + '</ul></div>';
+  }
+
+  function formatTanggalPendek(iso) {
+    const d = parseIsoDate(iso);
+    return d ? d.getDate() + ' ' + bulanPendek.format(d) + ' ' + d.getFullYear() : 'Tanpa tanggal';
+  }
+
+  function renderAsetTerbaru(items) {
+    if (!items.length) return chartEmpty('Belum ada aset.');
+
+    const latest = items.slice()
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+      .slice(0, 5);
+
+    const rows = latest.map((a) => {
+      const initial = String(a.nama || '?').trim().charAt(0).toUpperCase() || '?';
+      return '<li class="latest-item">' +
+        '<span class="latest-icon" aria-hidden="true">' + esc(initial) + '</span>' +
+        '<span class="latest-body">' +
+          '<span class="latest-name" title="' + esc(a.nama || '') + '">' + esc(a.nama || 'Tanpa nama') + '</span>' +
+          '<span class="latest-meta">' + esc((a.kategori || 'Lainnya') + ' · ' + formatTanggalPendek(a.tanggal)) + '</span>' +
+        '</span>' +
+        '<span class="latest-value">' + rupiah.format(nilaiAset(a)) + '</span>' +
+      '</li>';
+    }).join('');
+
+    return '<ul class="latest-list">' + rows + '</ul>';
+  }
+
+  function renderRingkasanKondisi(items) {
+    const rows = KONDISI.map((key) => {
+      const list = items.filter((a) => (a.kondisi || 'Baik') === key);
+      return {
+        key,
+        jenis: list.length,
+        unit: list.reduce((sum, a) => sum + (Number(a.jumlah) || 0), 0),
+        nilai: list.reduce((sum, a) => sum + nilaiAset(a), 0)
+      };
+    });
+
+    const body = rows.map((row) => (
+      '<tr>' +
+        '<td><span class="status-dot" style="background:' + (WARNA_KONDISI[row.key] || WARNA_GRAFIK[0]) + '"></span>' + esc(row.key) + '</td>' +
+        '<td class="num">' + angka.format(row.jenis) + '</td>' +
+        '<td class="num">' + angka.format(row.unit) + '</td>' +
+        '<td class="num">' + compactRupiah(row.nilai) + '</td>' +
+      '</tr>'
+    )).join('');
+
+    return '<table class="status-table">' +
+      '<thead><tr><th scope="col">Kondisi</th><th scope="col" class="num">Aset</th><th scope="col" class="num">Unit</th><th scope="col" class="num">Nilai</th></tr></thead>' +
+      '<tbody>' + body + '</tbody>' +
+      '</table>';
   }
 
   function syncSegment(selector, active) {
@@ -954,7 +1078,6 @@
     const weekly = mode === 'mingguan';
     const data = collectReport(state.items, report.source, mode, report.offset);
     const focus = data.focus;
-    const prev = data.prev;
 
     $('#reportSource').value = report.source;
     syncSegment('#reportModeWeekly', weekly);
@@ -987,39 +1110,29 @@
       note.textContent = '';
     }
 
-    const kategoriTeratas = data.kategori[0];
+    const items = state.items;
+    const totalUnit = items.reduce((sum, a) => sum + (Number(a.jumlah) || 0), 0);
+    const totalNilai = items.reduce((sum, a) => sum + nilaiAset(a), 0);
+    const hitungKondisi = (key) => items.filter((a) => (a.kondisi || 'Baik') === key).length;
     const kpi = [
-      {
-        label: 'Aset masuk',
-        value: angka.format(focus.jenis),
-        note: deltaHtml(focus.jenis, prev.jenis, 'unit') + ' dari periode sebelumnya'
-      },
-      {
-        label: 'Unit masuk',
-        value: angka.format(focus.unit),
-        note: deltaHtml(focus.unit, prev.unit, 'unit') + ' dari periode sebelumnya'
-      },
-      {
-        label: 'Nilai masuk',
-        value: compactRupiah(focus.nilai),
-        note: deltaHtml(focus.nilai, prev.nilai, 'nilai') + ' dari periode sebelumnya'
-      },
-      {
-        label: 'Kategori teratas',
-        value: kategoriTeratas ? kategoriTeratas.label : '—',
-        note: kategoriTeratas
-          ? (metric === 'nilai' ? compactRupiah(kategoriTeratas.nilai) : angka.format(kategoriTeratas.unit) + ' unit') + ' pada rentang ini'
-          : 'Belum ada data pada rentang ini'
-      }
+      { label: 'Total Aset', value: angka.format(items.length) },
+      { label: 'Total Unit', value: angka.format(totalUnit) },
+      { label: 'Aktif', value: angka.format(hitungKondisi('Baik')), tone: 'is-green' },
+      { label: 'Maintenance', value: angka.format(hitungKondisi('Rusak Ringan')), tone: 'is-amber' },
+      { label: 'Rusak', value: angka.format(hitungKondisi('Rusak Berat')), tone: 'is-red' },
+      { label: 'Total Nilai', value: rupiah.format(totalNilai) }
     ];
 
     $('#dashKpis').innerHTML = kpi.map((item) => (
       '<div class="kpi">' +
         '<p class="kpi-label">' + esc(item.label) + '</p>' +
-        '<strong class="kpi-value" title="' + esc(item.label + ': ' + item.value) + '">' + esc(item.value) + '</strong>' +
-        '<p class="kpi-note">' + item.note + '</p>' +
+        '<strong class="kpi-value' + (item.tone ? ' ' + item.tone : '') + '" title="' + esc(item.label + ': ' + item.value) + '">' + esc(item.value) + '</strong>' +
       '</div>'
     )).join('');
+
+    $('#dashToday').textContent = new Intl.DateTimeFormat('id-ID', {
+      weekday: 'long', day: '2-digit', month: 'short', year: 'numeric'
+    }).format(new Date());
 
     $('#trendModeLabel').textContent = weekly ? 'minggu' : 'bulan';
     $('#trendSub').textContent = (weekly ? REPORT_WEEKS + ' minggu' : REPORT_MONTHS + ' bulan') + ' terakhir';
@@ -1029,19 +1142,22 @@
 
     $('#trendChart').innerHTML = renderTrendChart(data.periods, mode);
     $('#kategoriChart').innerHTML = renderDonutChart(data.kategori);
-    $('#lokasiChart').innerHTML = renderHBar(
-      data.lokasi.map((entry) => ({ label: entry.label, value: metricValue(entry) })),
-      metric
+    $('#lokasiChart').innerHTML = renderBarChart(
+      data.lokasi.map((entry) => ({ label: entry.label, value: metricValue(entry) }))
     );
+    $('#kondisiChart').innerHTML = renderPieChart(KONDISI.map((key) => ({
+      label: key,
+      value: data.kondisi[key] || 0,
+      color: WARNA_KONDISI[key]
+    })));
 
-    const kondisiTotal = KONDISI.reduce((sum, key) => sum + (data.kondisi[key] || 0), 0);
-    $('#kondisiChart').innerHTML = kondisiTotal
-      ? renderHBar(KONDISI.map((key) => ({
-        label: key,
-        value: data.kondisi[key] || 0,
-        className: 'kondisi-' + (key === 'Baik' ? 'baik' : key === 'Rusak Ringan' ? 'ringan' : 'berat')
-      })), 'unit')
-      : chartEmpty('Belum ada data kondisi pada rentang ini.');
+    const nilaiKategori = data.kategori.slice()
+      .sort((a, b) => b.nilai - a.nilai)
+      .slice(0, 5)
+      .map((entry) => ({ label: entry.label, value: entry.nilai }));
+    $('#nilaiKategoriChart').innerHTML = renderHBar(nilaiKategori, 'nilai');
+    $('#asetTerbaru').innerHTML = renderAsetTerbaru(items);
+    $('#ringkasanKondisi').innerHTML = renderRingkasanKondisi(items);
 
     const rows = data.periods.slice().reverse();
     const total = rows.reduce((acc, period) => {
@@ -1234,7 +1350,6 @@
   }
 
   function renderAll() {
-    renderStats();
     renderDashboard();
     renderTable();
   }

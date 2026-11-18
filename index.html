@@ -19,7 +19,7 @@
     })();
   </script>
 
-  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="stylesheet" href="assets/css/style.css?v=4" />
 </head>
 <body>
   <a class="skip-link" href="#main">Lewati ke konten utama</a>
@@ -280,69 +280,19 @@
   </header>
 
   <main id="main" class="container">
-    <section class="stats" aria-label="Ringkasan aset">
-      <article class="stat-card">
-        <div class="stat-icon blue" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 8.5 12 3 3 8.5v7L12 21l9-5.5z" /><path d="M3 8.5 12 14l9-5.5" /><path d="M12 14v7" />
-          </svg>
-        </div>
-        <div class="stat-body">
-          <p class="stat-label">Total unit aset</p>
-          <strong class="stat-value" id="statUnit">0</strong>
-          <p class="stat-note">Seluruh unit tercatat</p>
-        </div>
-      </article>
-
-      <article class="stat-card">
-        <div class="stat-icon green" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2.5" y="6" width="19" height="12" rx="2.5" /><circle cx="12" cy="12" r="2.5" /><path d="M6 12h.01M18 12h.01" />
-          </svg>
-        </div>
-        <div class="stat-body">
-          <p class="stat-label">Total nilai aset</p>
-          <strong class="stat-value" id="statNilai">Rp 0</strong>
-          <p class="stat-note">Akumulasi harga aset</p>
-        </div>
-      </article>
-
-      <article class="stat-card">
-        <div class="stat-icon violet" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3.5 7.5 12 3l8.5 4.5L12 12z" /><path d="M3.5 12 12 16.5 20.5 12" /><path d="M3.5 16.5 12 21l8.5-4.5" />
-          </svg>
-        </div>
-        <div class="stat-body">
-          <p class="stat-label">Kategori</p>
-          <strong class="stat-value" id="statKategori">0</strong>
-          <p class="stat-note">Kelompok aset terdaftar</p>
-        </div>
-      </article>
-
-      <article class="stat-card">
-        <div class="stat-icon amber" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M10.3 3.9 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
-            <path d="M12 9v4M12 17h.01" />
-          </svg>
-        </div>
-        <div class="stat-body">
-          <p class="stat-label">Perlu perhatian</p>
-          <strong class="stat-value" id="statRusak">0</strong>
-          <p class="stat-note">Unit rusak ringan/berat</p>
-        </div>
-      </article>
-    </section>
-
-    <!-- ================= Dashboard & Laporan ================= -->
+    <!-- ================= Dashboard ================= -->
     <section class="dashboard" aria-labelledby="dashboardTitle">
-      <div class="dash-head">
+      <div class="dash-top">
         <div class="dash-title">
-          <h2 id="dashboardTitle">Dashboard &amp; Laporan</h2>
+          <h2 id="dashboardTitle">Dashboard</h2>
           <p class="dash-sub" id="reportHint">Ringkasan aset per minggu.</p>
         </div>
+        <span class="dash-date" id="dashToday">—</span>
+      </div>
 
+      <div class="kpi-grid" id="dashKpis" aria-live="polite"></div>
+
+      <div class="dash-toolbar">
         <div class="dash-controls">
           <label class="dash-select" for="reportSource">
             <span>Sumber tanggal</span>
@@ -362,42 +312,32 @@
             <button class="seg-btn" type="button" id="reportMetricValue" aria-pressed="false">Nilai</button>
           </div>
         </div>
-      </div>
 
-      <div class="dash-nav">
-        <button class="icon-btn" type="button" id="reportPrev" aria-label="Periode sebelumnya" title="Periode sebelumnya">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="m15 6-6 6 6 6" />
-          </svg>
-        </button>
-        <div class="dash-range">
-          <strong id="reportRange">—</strong>
-          <span id="reportWindow">—</span>
+        <div class="dash-nav">
+          <button class="icon-btn" type="button" id="reportPrev" aria-label="Periode sebelumnya" title="Periode sebelumnya">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="m15 6-6 6 6 6" />
+            </svg>
+          </button>
+          <div class="dash-range">
+            <strong id="reportRange">—</strong>
+            <span id="reportWindow">—</span>
+          </div>
+          <button class="icon-btn" type="button" id="reportNext" aria-label="Periode berikutnya" title="Periode berikutnya" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="m9 6 6 6-6 6" />
+            </svg>
+          </button>
+          <button class="btn btn-ghost btn-sm" type="button" id="reportToday">Terbaru</button>
         </div>
-        <button class="icon-btn" type="button" id="reportNext" aria-label="Periode berikutnya" title="Periode berikutnya" disabled>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="m9 6 6 6-6 6" />
-          </svg>
-        </button>
-        <button class="btn btn-ghost btn-sm" type="button" id="reportToday">Terbaru</button>
       </div>
 
       <p class="dash-note" id="reportNoDate" hidden></p>
 
-      <div class="dash-kpis" id="dashKpis" aria-live="polite"></div>
-
-      <div class="dash-grid">
-        <article class="dash-card dash-span-2">
-          <div class="dash-card-head">
-            <h3>Tren per <span id="trendModeLabel">minggu</span></h3>
-            <span class="dash-card-sub" id="trendSub">8 minggu terakhir</span>
-          </div>
-          <div class="chart" id="trendChart"></div>
-        </article>
-
+      <div class="dash-charts">
         <article class="dash-card">
           <div class="dash-card-head">
-            <h3>Komposisi kategori</h3>
+            <h3>Aset per Kategori</h3>
             <span class="dash-card-sub" id="kategoriSub">Berdasarkan unit</span>
           </div>
           <div class="chart chart-donut" id="kategoriChart"></div>
@@ -405,18 +345,52 @@
 
         <article class="dash-card">
           <div class="dash-card-head">
-            <h3>Kondisi aset</h3>
-            <span class="dash-card-sub">Dalam rentang laporan</span>
-          </div>
-          <div class="chart chart-hbar" id="kondisiChart"></div>
-        </article>
-
-        <article class="dash-card dash-span-2">
-          <div class="dash-card-head">
-            <h3>Top 5 lokasi</h3>
+            <h3>Aset per Lokasi</h3>
             <span class="dash-card-sub" id="lokasiSub">Berdasarkan unit</span>
           </div>
-          <div class="chart chart-hbar" id="lokasiChart"></div>
+          <div class="chart" id="lokasiChart"></div>
+        </article>
+
+        <article class="dash-card">
+          <div class="dash-card-head">
+            <h3>Aset per Kondisi</h3>
+            <span class="dash-card-sub">Dalam rentang laporan</span>
+          </div>
+          <div class="chart chart-pie" id="kondisiChart"></div>
+        </article>
+      </div>
+
+      <article class="dash-card dash-trend">
+        <div class="dash-card-head">
+          <h3>Tren per <span id="trendModeLabel">minggu</span></h3>
+          <span class="dash-card-sub" id="trendSub">8 minggu terakhir</span>
+        </div>
+        <div class="chart" id="trendChart"></div>
+      </article>
+
+      <div class="dash-lower">
+        <article class="dash-card">
+          <div class="dash-card-head">
+            <h3>Nilai per Kategori</h3>
+            <span class="dash-card-sub">Top 5</span>
+          </div>
+          <div id="nilaiKategoriChart"></div>
+        </article>
+
+        <article class="dash-card">
+          <div class="dash-card-head">
+            <h3>Aset Terbaru</h3>
+            <span class="dash-card-sub">5 entri terakhir</span>
+          </div>
+          <div id="asetTerbaru"></div>
+        </article>
+
+        <article class="dash-card">
+          <div class="dash-card-head">
+            <h3>Ringkasan Kondisi</h3>
+            <span class="dash-card-sub">Seluruh data</span>
+          </div>
+          <div id="ringkasanKondisi"></div>
         </article>
       </div>
 
@@ -766,6 +740,6 @@
     <p style="padding:16px;text-align:center">Aplikasi ini memerlukan JavaScript. Silakan aktifkan JavaScript di browser Anda.</p>
   </noscript>
 
-  <script src="assets/js/app.js"></script>
+  <script src="assets/js/app.js?v=4"></script>
 </body>
 </html>
