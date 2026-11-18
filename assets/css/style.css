@@ -1221,6 +1221,235 @@ tbody td.num {
   text-align: right;
 }
 
+/* Filter per kolom (gaya Excel) */
+.th-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+thead th.num .th-inner {
+  justify-content: space-between;
+}
+
+.th-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.col-filter-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  opacity: 0.72;
+  transition: background 0.14s ease, color 0.14s ease, opacity 0.14s ease;
+}
+
+.col-filter-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.col-filter-btn:hover {
+  background: var(--surface-3);
+  color: var(--text);
+  opacity: 1;
+}
+
+.col-filter-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+  opacity: 1;
+}
+
+.col-filter-btn.is-active {
+  background: var(--primary-soft);
+  color: var(--primary);
+  border-color: var(--primary);
+  opacity: 1;
+}
+
+.col-filter-pop {
+  position: fixed;
+  z-index: 70;
+  width: 274px;
+  max-width: calc(100vw - 16px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.col-filter-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.col-filter-head strong {
+  font-size: 0.78rem;
+  letter-spacing: -0.01em;
+}
+
+.col-filter-clear {
+  padding: 3px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.col-filter-clear:hover {
+  background: var(--primary-soft);
+}
+
+.col-filter-clear:disabled {
+  color: var(--muted);
+  cursor: default;
+  opacity: 0.6;
+  background: transparent;
+}
+
+.col-filter-search {
+  display: block;
+  width: calc(100% - 24px);
+  margin: 8px 12px 0;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.78rem;
+}
+
+.col-filter-search:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: -1px;
+}
+
+.col-filter-list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0 6px 4px;
+  max-height: min(232px, calc(100vh - 250px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.col-filter-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 7px 14px 0;
+}
+
+.col-filter-tools[hidden] {
+  display: none;
+}
+
+.col-filter-tools button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  font-size: 0.71rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.col-filter-tools button:hover {
+  text-decoration: underline;
+}
+
+.col-filter-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 7px;
+  border-radius: 7px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.col-filter-option:hover {
+  background: var(--surface-2);
+}
+
+.col-filter-option input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  flex: none;
+  accent-color: var(--primary);
+}
+
+.col-filter-option span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.col-filter-option b {
+  margin-left: auto;
+  flex: none;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.col-filter-note {
+  margin: 0;
+  padding: 12px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  text-align: center;
+}
+
+.col-filter-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.col-filter-count {
+  color: var(--muted);
+  font-size: 0.71rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.col-filter-foot .btn {
+  padding: 7px 14px;
+  font-size: 0.78rem;
+}
+
+[data-theme="dark"] .col-filter-pop {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 22px 44px -22px rgba(0, 0, 0, 0.9);
+}
+
 tbody td {
   padding: 12px 16px;
   border-bottom: 1px solid var(--border);

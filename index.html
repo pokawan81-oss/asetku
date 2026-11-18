@@ -19,7 +19,7 @@
     })();
   </script>
 
-  <link rel="stylesheet" href="assets/css/style.css?v=4" />
+  <link rel="stylesheet" href="assets/css/style.css?v=5" />
 </head>
 <body>
   <a class="skip-link" href="#main">Lewati ke konten utama</a>
@@ -452,12 +452,54 @@
         <table>
           <thead>
             <tr>
-              <th scope="col">Kode</th>
-              <th scope="col">Nama Aset</th>
-              <th scope="col" class="hide-md">Kategori</th>
-              <th scope="col" class="num">Jumlah</th>
-              <th scope="col">Kondisi</th>
-              <th scope="col" class="num hide-sm">Nilai Total</th>
+              <th scope="col">
+                <span class="th-inner">
+                  <span class="th-label">Kode</span>
+                  <button class="col-filter-btn" type="button" data-col="kode" aria-haspopup="dialog" aria-expanded="false" aria-label="Filter kolom Kode" title="Filter kolom Kode">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                  </button>
+                </span>
+              </th>
+              <th scope="col">
+                <span class="th-inner">
+                  <span class="th-label">Nama Aset</span>
+                  <button class="col-filter-btn" type="button" data-col="nama" aria-haspopup="dialog" aria-expanded="false" aria-label="Filter kolom Nama Aset" title="Filter kolom Nama Aset">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                  </button>
+                </span>
+              </th>
+              <th scope="col" class="hide-md">
+                <span class="th-inner">
+                  <span class="th-label">Kategori</span>
+                  <button class="col-filter-btn" type="button" data-col="kategori" aria-haspopup="dialog" aria-expanded="false" aria-label="Filter kolom Kategori" title="Filter kolom Kategori">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                  </button>
+                </span>
+              </th>
+              <th scope="col" class="num">
+                <span class="th-inner">
+                  <span class="th-label">Jumlah</span>
+                  <button class="col-filter-btn" type="button" data-col="jumlah" aria-haspopup="dialog" aria-expanded="false" aria-label="Filter kolom Jumlah" title="Filter kolom Jumlah">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                  </button>
+                </span>
+              </th>
+              <th scope="col">
+                <span class="th-inner">
+                  <span class="th-label">Kondisi</span>
+                  <button class="col-filter-btn" type="button" data-col="kondisi" aria-haspopup="dialog" aria-expanded="false" aria-label="Filter kolom Kondisi" title="Filter kolom Kondisi">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                  </button>
+                </span>
+              </th>
+              <th scope="col" class="num hide-sm">
+                <span class="th-inner">
+                  <span class="th-label">Nilai Total</span>
+                  <button class="col-filter-btn" type="button" data-col="nilai" aria-haspopup="dialog" aria-expanded="false" aria-label="Filter kolom Nilai Total" title="Filter kolom Nilai Total">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                  </button>
+                </span>
+              </th>
               <th scope="col" class="actions-head"><span class="visually-hidden">Aksi</span></th>
             </tr>
           </thead>
@@ -740,6 +782,6 @@
     <p style="padding:16px;text-align:center">Aplikasi ini memerlukan JavaScript. Silakan aktifkan JavaScript di browser Anda.</p>
   </noscript>
 
-  <script src="assets/js/app.js?v=4"></script>
+  <script src="assets/js/app.js?v=5"></script>
 </body>
 </html>

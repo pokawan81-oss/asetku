@@ -175,6 +175,7 @@
     kategori: 'all',
     kondisi: 'all',
     sort: 'baru',
+    columnFilters: {},
     page: 1,
     editId: null,
     detailId: null,
@@ -1231,19 +1232,249 @@
     return arr;
   }
 
-  function applyFilters() {
-    const q = state.query.trim().toLowerCase();
+  /* ---------------- Filter per kolom (gaya Excel) ---------------- */
+  const KOLOM_FILTER = [
+    { key: 'kode', label: 'Kode', tipe: 'teks', nilai: (a) => a.kode || '—' },
+    { key: 'nama', label: 'Nama Aset', tipe: 'teks', nilai: (a) => a.nama || '' },
+    { key: 'kategori', label: 'Kategori', tipe: 'teks', nilai: (a) => a.kategori || 'Lainnya' },
+    { key: 'jumlah', label: 'Jumlah', tipe: 'angka', nilai: (a) => String(Number(a.jumlah) || 0) },
+    { key: 'kondisi', label: 'Kondisi', tipe: 'teks', nilai: (a) => a.kondisi || 'Baik' },
+    { key: 'nilai', label: 'Nilai Total', tipe: 'angka', nilai: (a) => String(nilaiAset(a)) }
+  ];
 
-    let list = state.items.filter((a) => {
-      if (state.kategori !== 'all' && a.kategori !== state.kategori) return false;
-      if (state.kondisi !== 'all' && a.kondisi !== state.kondisi) return false;
-      if (!q) return true;
+  const kolomFilter = (key) => KOLOM_FILTER.find((kolom) => kolom.key === key);
+
+  function labelNilaiKolom(key, raw) {
+    if (key === 'nilai') return rupiah.format(Number(raw) || 0);
+    if (key === 'jumlah') return angka.format(Number(raw) || 0);
+    return raw;
+  }
+
+  function adaFilterKolom() {
+    return KOLOM_FILTER.some((kolom) => {
+      const aktif = state.columnFilters[kolom.key];
+      return Array.isArray(aktif) && aktif.length > 0;
+    });
+  }
+
+  function cocokFilterKolom(a, lewati) {
+    return KOLOM_FILTER.every((kolom) => {
+      if (kolom.key === lewati) return true;
+      const aktif = state.columnFilters[kolom.key];
+      if (!aktif || !aktif.length) return true;
+      return aktif.indexOf(kolom.nilai(a)) !== -1;
+    });
+  }
+
+  function cocokDasar(a, lewati) {
+    const q = state.query.trim().toLowerCase();
+    if (state.kategori !== 'all' && a.kategori !== state.kategori) return false;
+    if (state.kondisi !== 'all' && a.kondisi !== state.kondisi) return false;
+    if (q) {
       const haystack = [a.kode, a.nama, a.kategori, a.lokasi, a.keterangan, a.satuan, a.kondisi]
         .join(' ')
         .toLowerCase();
-      return haystack.indexOf(q) !== -1;
+      if (haystack.indexOf(q) === -1) return false;
+    }
+    return cocokFilterKolom(a, lewati);
+  }
+
+  function opsiKolom(kolom) {
+    const map = new Map();
+    state.items.forEach((a) => {
+      if (!cocokDasar(a, kolom.key)) return;
+      const raw = kolom.nilai(a);
+      map.set(raw, (map.get(raw) || 0) + 1);
     });
 
+    return Array.from(map.entries())
+      .map(([raw, jumlah]) => ({ raw, label: labelNilaiKolom(kolom.key, raw), jumlah }))
+      .sort((x, y) => (kolom.tipe === 'angka'
+        ? Number(x.raw) - Number(y.raw)
+        : x.label.localeCompare(y.label, 'id', { sensitivity: 'base', numeric: true })));
+  }
+
+  let filterPop = null;
+  let filterPopKey = null;
+  let filterPopAnchor = null;
+
+  function sinkronTombolFilter() {
+    document.querySelectorAll('.col-filter-btn').forEach((btn) => {
+      const key = btn.getAttribute('data-col');
+      const kolom = kolomFilter(key);
+      const aktif = !!(state.columnFilters[key] && state.columnFilters[key].length);
+      const base = 'Filter kolom ' + (kolom ? kolom.label : key);
+      btn.classList.toggle('is-active', aktif);
+      btn.title = aktif ? base + ' (aktif)' : base;
+      btn.setAttribute('aria-label', btn.title);
+    });
+  }
+
+  function tutupFilterKolom(kembalikanFokus) {
+    if (!filterPop) return;
+    const anchor = filterPopAnchor;
+    filterPop.remove();
+    filterPop = null;
+    filterPopKey = null;
+    filterPopAnchor = null;
+    if (anchor) {
+      anchor.setAttribute('aria-expanded', 'false');
+      if (kembalikanFokus) anchor.focus();
+    }
+  }
+
+  function posisikanFilterKolom(pop, anchor) {
+    const rect = anchor.getBoundingClientRect();
+    const margin = 8;
+    const width = pop.offsetWidth;
+    const height = pop.offsetHeight;
+    let left = Math.min(rect.right - width, window.innerWidth - width - margin);
+    left = Math.max(margin, left);
+    let top = rect.bottom + 6;
+    if (top + height > window.innerHeight - margin) {
+      top = Math.max(margin, rect.top - height - 6);
+    }
+    pop.style.left = Math.round(left) + 'px';
+    pop.style.top = Math.round(top) + 'px';
+  }
+
+  function bukaFilterKolom(key, anchor) {
+    const kolom = kolomFilter(key);
+    if (!kolom) return;
+
+    if (filterPop && filterPopKey === key) {
+      tutupFilterKolom(true);
+      return;
+    }
+    tutupFilterKolom(false);
+
+    const opsi = opsiKolom(kolom);
+    const semua = opsi.map((item) => item.raw);
+    const terpilih = state.columnFilters[key];
+    const draft = new Set(terpilih ? terpilih.filter((raw) => semua.indexOf(raw) !== -1) : semua);
+
+    const pop = document.createElement('div');
+    pop.className = 'col-filter-pop';
+    pop.setAttribute('role', 'dialog');
+    pop.setAttribute('aria-label', 'Filter kolom ' + kolom.label);
+    pop.innerHTML =
+      '<div class="col-filter-head">' +
+        '<strong>Filter ' + esc(kolom.label) + '</strong>' +
+        '<button class="col-filter-clear" type="button" data-cf="clear">Hapus</button>' +
+      '</div>' +
+      '<input class="col-filter-search" type="search" placeholder="Cari nilai…" autocomplete="off" aria-label="Cari nilai ' + esc(kolom.label) + '" />' +
+      '<div class="col-filter-tools" hidden>' +
+        '<button type="button" data-cf="only">Pilih hanya hasil ini</button>' +
+        '<button type="button" data-cf="all">Pilih semua</button>' +
+      '</div>' +
+      '<ul class="col-filter-list" role="group" aria-label="Nilai ' + esc(kolom.label) + '"></ul>' +
+      '<div class="col-filter-foot">' +
+        '<span class="col-filter-count" aria-live="polite"></span>' +
+        '<button class="btn btn-primary" type="button" data-cf="apply">Terapkan</button>' +
+      '</div>';
+
+    document.body.appendChild(pop);
+    pop.style.visibility = 'hidden';
+
+    const list = pop.querySelector('.col-filter-list');
+    const cari = pop.querySelector('.col-filter-search');
+    const tools = pop.querySelector('.col-filter-tools');
+    const applyBtn = pop.querySelector('[data-cf="apply"]');
+    const clearBtn = pop.querySelector('[data-cf="clear"]');
+    const countEl = pop.querySelector('.col-filter-count');
+    let tampilSekarang = [];
+
+    function renderStatus() {
+      countEl.textContent = draft.size + ' dari ' + semua.length + ' nilai';
+      applyBtn.disabled = draft.size === 0;
+      clearBtn.disabled = !terpilih;
+    }
+
+    function renderList() {
+      const q = cari.value.trim().toLowerCase();
+      const tampil = q
+        ? opsi.filter((item) => item.label.toLowerCase().indexOf(q) !== -1)
+        : opsi;
+      tampilSekarang = tampil;
+      tools.hidden = !q;
+
+      if (!tampil.length) {
+        list.innerHTML = '<li class="col-filter-note">Tidak ada nilai yang cocok.</li>';
+        renderStatus();
+        return;
+      }
+
+      list.innerHTML = tampil.map((item) => (
+        '<li><label class="col-filter-option">' +
+          '<input type="checkbox" data-value="' + esc(item.raw) + '"' + (draft.has(item.raw) ? ' checked' : '') + ' />' +
+          '<span title="' + esc(item.label) + '">' + esc(item.label) + '</span>' +
+          '<b>' + angka.format(item.jumlah) + '</b>' +
+        '</label></li>'
+      )).join('');
+      renderStatus();
+    }
+
+    function terapkan() {
+      if (!draft.size) return;
+      if (draft.size >= semua.length) delete state.columnFilters[key];
+      else state.columnFilters[key] = Array.from(draft);
+      state.page = 1;
+      tutupFilterKolom(false);
+      renderTable();
+    }
+
+    list.addEventListener('change', (e) => {
+      const box = e.target.closest('input[data-value]');
+      if (!box) return;
+      if (box.checked) draft.add(box.getAttribute('data-value'));
+      else draft.delete(box.getAttribute('data-value'));
+      renderStatus();
+    });
+
+    cari.addEventListener('input', renderList);
+
+    cari.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        terapkan();
+      }
+    });
+
+    pop.addEventListener('click', (e) => {
+      const act = e.target.closest('[data-cf]');
+      if (!act) return;
+      const aksi = act.getAttribute('data-cf');
+      if (aksi === 'clear') {
+        delete state.columnFilters[key];
+        state.page = 1;
+        tutupFilterKolom(false);
+        renderTable();
+      } else if (aksi === 'apply') {
+        terapkan();
+      } else if (aksi === 'only') {
+        draft.clear();
+        tampilSekarang.forEach((item) => draft.add(item.raw));
+        renderList();
+      } else if (aksi === 'all') {
+        draft.clear();
+        semua.forEach((raw) => draft.add(raw));
+        renderList();
+      }
+    });
+
+    renderList();
+
+    filterPop = pop;
+    filterPopKey = key;
+    filterPopAnchor = anchor;
+    anchor.setAttribute('aria-expanded', 'true');
+    posisikanFilterKolom(pop, anchor);
+    pop.style.visibility = '';
+    cari.focus({ preventScroll: true });
+  }
+
+  function applyFilters() {
+    const list = state.items.filter((a) => cocokDasar(a));
     state.view = sortItems(list, state.sort);
   }
 
@@ -1298,12 +1529,14 @@
   }
 
   function updateResetVisibility() {
-    const active = state.query.trim() !== '' || state.kategori !== 'all' || state.kondisi !== 'all' || state.sort !== 'baru';
+    const active = state.query.trim() !== '' || state.kategori !== 'all' || state.kondisi !== 'all'
+      || adaFilterKolom() || state.sort !== 'baru';
     const btn = $('#btnResetFilter');
     if (btn) btn.hidden = !active;
   }
 
   function renderTable() {
+    tutupFilterKolom(false);
     applyFilters();
 
     const total = state.view.length;
@@ -1320,7 +1553,7 @@
     const tableWrap = $('#tableWrap');
     const footer = $('#tableFooter');
 
-    const hasFilter = state.query.trim() !== '' || state.kategori !== 'all' || state.kondisi !== 'all';
+    const hasFilter = state.query.trim() !== '' || state.kategori !== 'all' || state.kondisi !== 'all' || adaFilterKolom();
 
     if (!total) {
       if (tbody) tbody.innerHTML = '';
@@ -1347,6 +1580,7 @@
     }
 
     updateResetVisibility();
+    sinkronTombolFilter();
   }
 
   function renderAll() {
@@ -2580,11 +2814,13 @@
     state.kategori = 'all';
     state.kondisi = 'all';
     state.sort = 'baru';
+    state.columnFilters = {};
     state.page = 1;
     $('#searchInput').value = '';
     $('#filterKategori').value = 'all';
     $('#filterKondisi').value = 'all';
     $('#sortSelect').value = 'baru';
+    tutupFilterKolom(false);
     renderTable();
   }
 
@@ -2746,6 +2982,33 @@
     });
 
     $('#btnResetFilter').addEventListener('click', resetFilters);
+
+    /* Filter per kolom */
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.col-filter-btn');
+      if (!btn) return;
+      bukaFilterKolom(btn.getAttribute('data-col'), btn);
+    });
+
+    document.addEventListener('pointerdown', (e) => {
+      if (!filterPop) return;
+      if (filterPop.contains(e.target)) return;
+      if (e.target.closest('.col-filter-btn')) return;
+      tutupFilterKolom(false);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && filterPop) {
+        e.stopPropagation();
+        tutupFilterKolom(true);
+      }
+    });
+
+    window.addEventListener('resize', () => tutupFilterKolom(false));
+    window.addEventListener('scroll', (e) => {
+      if (filterPop && e.target instanceof Node && filterPop.contains(e.target)) return;
+      tutupFilterKolom(false);
+    }, true);
 
     /* Paginasi */
     $('#pagePrev').addEventListener('click', () => {

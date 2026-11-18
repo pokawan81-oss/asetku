@@ -14,7 +14,7 @@ Data aset disimpan otomatis di **localStorage** browser, sehingga tetap ada wala
 - **Form aman** — meminta konfirmasi sebelum ditutup jika ada perubahan belum disimpan, memvalidasi tanggal (tidak boleh masa depan) dan kode duplikat, serta menyimpan dengan `Ctrl + Enter`. Tombol simpan tersedia di footer yang selalu terlihat dan di kanan atas form.
 - **Detail aset** dalam modal, termasuk nilai total.
 - **Pencarian** berdasarkan nama, kode, kategori, lokasi, atau keterangan.
-- **Filter** kategori & kondisi, serta **pengurutan** (terbaru, nama, nilai, tanggal).
+- **Filter** kategori & kondisi, **filter per kolom** (klik panah di header tabel: Kode, Nama Aset, Kategori, Jumlah, Kondisi, Nilai Total), serta **pengurutan** (terbaru, nama, nilai, tanggal).
 - **Kartu ringkasan** di dashboard: total aset, total unit, kondisi aktif/maintenance/rusak, dan total nilai.
 - **Dashboard & laporan** — KPI keseluruhan, tren mingguan/bulanan, komposisi kategori, top lokasi, kondisi aset, nilai per kategori, aset terbaru, dan tabel rekap; sumber tanggal (perolehan/input) serta metrik (unit/nilai) dapat dipilih.
 - **Paginasi** otomatis.
@@ -75,6 +75,17 @@ Isi panel:
 8. **Rekap periode** — jumlah aset, unit, dan nilai tiap periode, ditutup baris TOTAL.
 
 Aset tanpa tanggal sesuai sumber (misalnya tanggal perolehan kosong) tidak diikutkan pada tren, tetapi jumlahnya dijelaskan pada catatan di atas grafik. Preferensi sumber, mode, dan metrik tersimpan otomatis di browser.
+
+## Filter per Kolom
+
+Setiap header tabel aset memiliki tombol panah seperti filter Excel:
+
+1. Klik panah di header kolom (Kode, Nama Aset, Kategori, Jumlah, Kondisi, atau Nilai Total).
+2. Centang nilai yang ingin ditampilkan. Gunakan kolom **Cari nilai** untuk mempersempit daftar, lalu **Pilih hanya hasil ini** bila ingin memilih semua hasil pencarian sekaligus.
+3. Klik **Terapkan**. Tombol panah berubah biru selama filter kolom aktif.
+4. Klik **Hapus** di dalam panel, tombol **Reset** di toolbar, atau Escape untuk menutup panel.
+
+Filter kolom bisa digabung dengan pencarian, filter kategori/kondisi di toolbar, dan pengurutan. Daftar nilai pada panel mengikuti filter lain yang sedang aktif, sehingga hanya menampilkan pilihan yang masih relevan.
 
 ## Struktur File
 
@@ -145,6 +156,8 @@ Sheet **Data Aset**, **Rekap Kategori**, **Laporan Mingguan**, dan **Laporan Bul
 4. Klik **Clear Filter** untuk menampilkan semua baris lagi.
 
 Baris **TOTAL** sengaja diletakkan **di luar tabel** agar angkanya tidak ikut tersaring saat filter dipakai.
+
+Jika panah filter tidak merespons: pastikan file dibuka di **Excel desktop/aplikasi Excel** (bukan pratinjau file), dan klik **Enable Editing / Aktifkan Pengeditan** pada bilah kuning **Protected View**. Filter versi web tersedia langsung di tabel aplikasi tanpa perlu membuka Excel.
 
 ## Kustomisasi Cepat
 
